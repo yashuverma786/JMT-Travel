@@ -23,13 +23,16 @@ function ModalPortal({ children, isOpen }: { children: React.ReactNode; isOpen: 
 
   useEffect(() => {
     if (isOpen) {
+      // Prevent body scroll when modal is open, but allow dropdowns to escape
       document.body.style.overflow = "hidden"
-      document.body.style.paddingRight = "0px"
+      document.body.style.paddingRight = "0px" // Prevent layout shift
     } else {
+      // Restore body scroll when modal is closed
       document.body.style.overflow = "unset"
       document.body.style.paddingRight = "0px"
     }
 
+    // Cleanup on unmount
     return () => {
       document.body.style.overflow = "unset"
       document.body.style.paddingRight = "0px"
@@ -54,6 +57,7 @@ export default function SearchModal() {
   }, [])
 
   useEffect(() => {
+    // Handle escape key
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         setIsOpen(false)
@@ -148,14 +152,16 @@ export default function SearchModal() {
                   stiffness: 300,
                   duration: 0.3,
                 }}
-                className="relative w-full max-w-4xl max-h-[90vh] overflow-hidden mx-4"
+                className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4" // Changed overflow-hidden to overflow-y-auto
                 style={{
                   position: "relative",
                   zIndex: 1,
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Card className="shadow-2xl border-0 bg-white backdrop-blur-lg overflow-hidden">
+                <Card className="shadow-2xl border-0 bg-white backdrop-blur-lg overflow-visible">
+                  {" "}
+                  {/* Changed overflow-hidden to overflow-visible */}
                   {/* Close Button */}
                   <div className="absolute top-4 right-4 z-10">
                     <Button
@@ -168,7 +174,6 @@ export default function SearchModal() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-
                   {/* Scrollable Content */}
                   <div className="max-h-[90vh] overflow-y-auto">
                     <Tabs defaultValue="destinations" className="w-full" onValueChange={setActiveTab}>

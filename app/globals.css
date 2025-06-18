@@ -64,9 +64,33 @@
   input[type="button"],
   input[type="submit"],
   input[type="reset"],
-  a {
-    min-height: 44px;
+  a,
+  select,
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  textarea {
+    min-height: 44px; /* WCAG 2.1 AA minimum touch target size */
     min-width: 44px;
+  }
+
+  /* Adjust for smaller screens */
+  @media (max-width: 768px) {
+    button,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    a,
+    select,
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"],
+    textarea {
+      min-height: 48px; /* Slightly larger for better mobile touch */
+      min-width: 48px;
+    }
   }
 
   /* Safe area insets for iOS */
@@ -98,11 +122,15 @@
     line-height: 1.2;
   }
 
-  /* Responsive font sizes */
-  @media (max-width: 640px) {
-    html {
-      font-size: 16px;
-    }
+  /* Prevent zoom on input focus on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 16px;
   }
 }
 
@@ -421,34 +449,6 @@
 
 .animate-bounce {
   animation: bounce 1s infinite;
-}
-
-/* Mobile-specific improvements */
-@media (max-width: 768px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  /* Improve touch targets on mobile */
-  button,
-  input[type="button"],
-  input[type="submit"],
-  input[type="reset"],
-  a {
-    min-height: 48px;
-    min-width: 48px;
-  }
-
-  /* Prevent zoom on input focus */
-  input[type="text"],
-  input[type="email"],
-  input[type="tel"],
-  input[type="password"],
-  select,
-  textarea {
-    font-size: 16px;
-  }
 }
 
 /* High contrast mode support */

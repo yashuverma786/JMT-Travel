@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react" // Import useEffect
 import { createPortal } from "react-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -31,6 +31,17 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [isOpen])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -55,7 +66,10 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
   if (!isOpen) return null
 
   const popupContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4" style={{ zIndex: 9999 }}>
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 safe-area-inset"
+      style={{ zIndex: 9999 }}
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300"
@@ -67,7 +81,8 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/90 hover:bg-white shadow-lg transition-all duration-200 hover:scale-110 min-h-[44px] min-w-[44px]"
+          aria-label="Close popup"
         >
           <X className="h-5 w-5 text-gray-600" />
         </button>
@@ -115,7 +130,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                       onChange={(e) => handleInputChange("name", e.target.value)}
                       placeholder="Enter your full name"
                       required
-                      className="mt-1"
+                      className="mt-1 text-base min-h-[44px]"
                     />
                   </div>
                   <div>
@@ -130,7 +145,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                       onChange={(e) => handleInputChange("email", e.target.value)}
                       placeholder="Enter your email"
                       required
-                      className="mt-1"
+                      className="mt-1 text-base min-h-[44px]"
                     />
                   </div>
                 </div>
@@ -147,7 +162,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                       onChange={(e) => handleInputChange("phone", e.target.value)}
                       placeholder="+91 9876543210"
                       required
-                      className="mt-1"
+                      className="mt-1 text-base min-h-[44px]"
                     />
                   </div>
                   <div>
@@ -156,7 +171,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                       Preferred Destination
                     </Label>
                     <Select onValueChange={(value) => handleInputChange("destination", value)}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 text-base min-h-[44px]">
                         <SelectValue placeholder="Select destination" />
                       </SelectTrigger>
                       <SelectContent>
@@ -183,13 +198,13 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                       type="date"
                       value={formData.travelDate}
                       onChange={(e) => handleInputChange("travelDate", e.target.value)}
-                      className="mt-1"
+                      className="mt-1 text-base min-h-[44px]"
                     />
                   </div>
                   <div>
                     <Label htmlFor="travelers">No. of Travelers</Label>
                     <Select onValueChange={(value) => handleInputChange("travelers", value)}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 text-base min-h-[44px]">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -204,7 +219,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                   <div>
                     <Label htmlFor="budget">Budget Range</Label>
                     <Select onValueChange={(value) => handleInputChange("budget", value)}>
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="mt-1 text-base min-h-[44px]">
                         <SelectValue placeholder="Select budget" />
                       </SelectTrigger>
                       <SelectContent>
@@ -225,7 +240,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                     value={formData.message}
                     onChange={(e) => handleInputChange("message", e.target.value)}
                     placeholder="Tell us about your preferences, special occasions, or any specific requirements..."
-                    className="mt-1 min-h-[80px]"
+                    className="mt-1 min-h-[80px] text-base"
                   />
                 </div>
 
@@ -245,7 +260,7 @@ export default function LeadGenerationPopup({ isOpen, onClose }: LeadGenerationP
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-semibold py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700 text-white font-semibold py-3 text-lg shadow-lg hover:shadow-xl transition-all duration-300 min-h-[44px]"
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
