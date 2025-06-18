@@ -407,20 +407,6 @@ export default function BlogPostPage({ params }: { params: { id: string } }) {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Author Card */}
-            <Card>
-              <CardContent className="p-6 text-center">
-                <div className="w-20 h-20 bg-blue-500 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                  {post.author.charAt(0)}
-                </div>
-                <h3 className="font-bold text-lg mb-2">{post.author}</h3>
-                <p className="text-gray-600 text-sm mb-4">Travel Writer & Photographer</p>
-                <Button size="sm" className="w-full min-h-[44px]">
-                  Follow
-                </Button>
-              </CardContent>
-            </Card>
-
             {/* Related Posts */}
             {relatedPosts.length > 0 && (
               <Card>
