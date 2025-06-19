@@ -13,7 +13,7 @@ const trendingDestinations = [
   {
     id: 1,
     name: "Ladakh",
-    country: "India",
+    country: "ladakh",
     image: "/placeholder.svg?height=400&width=300",
     packages: 28,
     trending: "+45%",
@@ -24,7 +24,7 @@ const trendingDestinations = [
   {
     id: 2,
     name: "Andaman Islands",
-    country: "India",
+    country: "andaman",
     image: "/placeholder.svg?height=400&width=300",
     packages: 35,
     trending: "+38%",
@@ -35,7 +35,7 @@ const trendingDestinations = [
   {
     id: 3,
     name: "Spiti Valley",
-    country: "India",
+    country: "himachal-pradesh",
     image: "/placeholder.svg?height=400&width=300",
     packages: 22,
     trending: "+52%",
@@ -46,7 +46,7 @@ const trendingDestinations = [
   {
     id: 4,
     name: "Coorg",
-    country: "India",
+    country: "karnataka",
     image: "/placeholder.svg?height=400&width=300",
     packages: 31,
     trending: "+29%",
@@ -57,7 +57,7 @@ const trendingDestinations = [
   {
     id: 5,
     name: "Rishikesh",
-    country: "India",
+    country: "uttarakhand",
     image: "/placeholder.svg?height=400&width=300",
     packages: 26,
     trending: "+41%",
@@ -68,7 +68,7 @@ const trendingDestinations = [
   {
     id: 6,
     name: "Munnar",
-    country: "India",
+    country: "kerala",
     image: "/placeholder.svg?height=400&width=300",
     packages: 33,
     trending: "+35%",
@@ -159,7 +159,7 @@ export default function TrendingDestinations() {
                       asChild
                       className="group-hover:bg-green-500 group-hover:text-white transition-colors"
                     >
-                      <Link href={`/destinations/${destination.name.toLowerCase()}`}>
+                      <Link href={`/destinations/${destination.country}`}>
                         Explore
                         <ArrowRight className="ml-1 h-3 w-3" />
                       </Link>

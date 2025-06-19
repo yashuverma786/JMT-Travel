@@ -1,14 +1,14 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardContent } from "@/components/ui/card"
 
-export default function TripsLoading() {
+export default function ActivitiesLoading() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Skeleton */}
-      <div className="bg-gradient-to-r from-teal-600 to-green-600 text-white py-16">
+      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-16">
         <div className="container text-center">
           <Skeleton className="h-16 w-16 rounded-full mx-auto mb-4" />
-          <Skeleton className="h-12 w-48 mb-4 mx-auto" />
+          <Skeleton className="h-12 w-64 mb-4 mx-auto" />
           <Skeleton className="h-6 w-96 mb-6 mx-auto" />
           <div className="flex justify-center gap-4">
             <Skeleton className="h-6 w-24" />
@@ -35,7 +35,7 @@ export default function TripsLoading() {
         {/* Results Count Skeleton */}
         <Skeleton className="h-4 w-48 mb-6" />
 
-        {/* Trips Grid Skeleton */}
+        {/* Activities Grid Skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 9 }).map((_, i) => (
             <Card key={i} className="overflow-hidden">
@@ -49,7 +49,6 @@ export default function TripsLoading() {
                     <Skeleton className="h-4 w-20" />
                   </div>
                   <div className="flex gap-2">
-                    <Skeleton className="h-5 w-16" />
                     <Skeleton className="h-5 w-16" />
                     <Skeleton className="h-5 w-16" />
                   </div>
