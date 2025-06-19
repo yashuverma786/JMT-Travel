@@ -2,28 +2,21 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Lock, User } from "lucide-react"
 
-export default function AdminLogin() {
+export default function AdminLoginPage() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const router = useRouter()
-
-  useEffect(() => {
-    // Check if already logged in
-    if (localStorage.getItem("adminAuth") === "true") {
-      router.push("/admin/dashboard")
-    }
-  }, [router])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,23 +29,23 @@ export default function AdminLogin() {
       localStorage.setItem("adminUser", username)
       router.push("/admin/dashboard")
     } else {
-      setError("Invalid username or password")
+      setError("Invalid credentials. Please try again.")
     }
     setLoading(false)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-6 h-6 text-white" />
+      <Card className="w-full max-w-md shadow-xl">
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+            <Lock className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-2xl font-bold">JMT Travel Admin</CardTitle>
-          <p className="text-gray-600">Sign in to access dashboard</p>
+          <CardTitle className="text-2xl font-bold text-gray-900">JMT Travel Admin</CardTitle>
+          <p className="text-gray-600">Sign in to access the admin panel</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <div className="relative">
@@ -68,6 +61,7 @@ export default function AdminLogin() {
                 />
               </div>
             </div>
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -90,12 +84,15 @@ export default function AdminLogin() {
                 </button>
               </div>
             </div>
-            {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+
+            {error && <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
+
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-          <div className="mt-6 text-xs text-gray-500 text-center">
+
+          <div className="mt-6 text-center text-sm text-gray-500">
             <p>Demo Credentials:</p>
             <p>Username: Trip.jmt</p>
             <p>Password: QAZqazJmt#999</p>

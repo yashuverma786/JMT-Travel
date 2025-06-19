@@ -10,69 +10,69 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Plus, Search, Edit, Trash2, MapPin, Save, X } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Activity, Save, X } from "lucide-react"
 import { useAdmin } from "@/components/admin/admin-context"
 
-export default function DestinationsPage() {
-  const { destinations, setDestinations } = useAdmin()
+export default function ActivitiesPage() {
+  const { activities, setActivities } = useAdmin()
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false)
-  const [editingDestination, setEditingDestination] = useState<any>(null)
+  const [editingActivity, setEditingActivity] = useState<any>(null)
   const [formData, setFormData] = useState({
     name: "",
-    country: "",
+    category: "",
     description: "",
-    image: "",
     status: "active",
   })
 
-  const filteredDestinations = destinations.filter(
-    (dest) =>
-      dest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      dest.country.toLowerCase().includes(searchTerm.toLowerCase()),
+  const categories = ["Adventure", "Water Sports", "Cultural", "Wildlife", "Relaxation", "Food & Drink"]
+
+  const filteredActivities = activities.filter(
+    (activity) =>
+      activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      activity.category.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleEdit = (destination: any) => {
-    setEditingDestination(destination)
+  const handleEdit = (activity: any) => {
+    setEditingActivity(activity)
     setFormData({
-      name: destination.name,
-      country: destination.country,
-      description: destination.description,
-      image: destination.image,
-      status: destination.status,
+      name: activity.name,
+      category: activity.category,
+      description: activity.description,
+      status: activity.status,
     })
     setShowForm(true)
   }
 
   const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this destination?")) {
-      setDestinations(destinations.filter((dest) => dest.id !== id))
+    if (confirm("Are you sure you want to delete this activity?")) {
+      setActivities(activities.filter((activity) => activity.id !== id))
     }
   }
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault()
-    if (editingDestination) {
-      setDestinations(destinations.map((dest) => (dest.id === editingDestination.id ? { ...dest, ...formData } : dest)))
+    if (editingActivity) {
+      setActivities(
+        activities.map((activity) => (activity.id === editingActivity.id ? { ...activity, ...formData } : activity)),
+      )
     } else {
-      const newDestination = {
+      const newActivity = {
         id: Date.now().toString(),
         ...formData,
-        trips: 0,
       }
-      setDestinations([...destinations, newDestination])
+      setActivities([...activities, newActivity])
     }
     handleCancel()
   }
 
   const handleCancel = () => {
     setShowForm(false)
-    setEditingDestination(null)
+    setEditingActivity(null)
     setFormData({
       name: "",
-      country: "",
+      category: "",
       description: "",
-      image: "",
       status: "active",
     })
   }
@@ -87,39 +87,46 @@ export default function DestinationsPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {editingDestination ? "Edit Destination" : "Add New Destination"}
+              {editingActivity ? "Edit Activity" : "Add New Activity"}
             </h1>
-            <p className="text-gray-600">Manage travel destinations</p>
+            <p className="text-gray-600">Manage travel activities</p>
           </div>
         </div>
 
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Destination Details</CardTitle>
+            <CardTitle>Activity Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Destination Name</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Enter destination name"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="country">Country</Label>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    placeholder="Enter country"
-                    required
-                  />
-                </div>
+              <div>
+                <Label htmlFor="name">Activity Name</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Enter activity name"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={formData.category}
+                  onValueChange={(value) => setFormData({ ...formData, category: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
@@ -128,19 +135,9 @@ export default function DestinationsPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Enter destination description"
+                  placeholder="Enter activity description"
                   rows={3}
                   required
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="image">Image URL</Label>
-                <Input
-                  id="image"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="Enter image URL"
                 />
               </div>
 
@@ -160,7 +157,7 @@ export default function DestinationsPage() {
               <div className="flex gap-4 pt-4">
                 <Button type="submit">
                   <Save className="w-4 h-4 mr-2" />
-                  {editingDestination ? "Update" : "Create"} Destination
+                  {editingActivity ? "Update" : "Create"} Activity
                 </Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
@@ -177,12 +174,12 @@ export default function DestinationsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Destinations</h1>
-          <p className="text-gray-600">Manage travel destinations</p>
+          <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
+          <p className="text-gray-600">Manage travel activities and experiences</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Destination
+          Add Activity
         </Button>
       </div>
 
@@ -192,7 +189,7 @@ export default function DestinationsPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search destinations..."
+                placeholder="Search activities..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -202,40 +199,34 @@ export default function DestinationsPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDestinations.map((destination) => (
-              <Card key={destination.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <div className="aspect-video bg-gray-200 relative">
-                  <img
-                    src={destination.image || "/placeholder.svg?height=200&width=300&text=" + destination.name}
-                    alt={destination.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <Badge
-                    className={`absolute top-2 right-2 ${
-                      destination.status === "active" ? "bg-green-500" : "bg-gray-500"
-                    }`}
-                  >
-                    {destination.status}
-                  </Badge>
-                </div>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <MapPin className="w-4 h-4 text-gray-500" />
-                    <h3 className="font-semibold text-lg">{destination.name}</h3>
+            {filteredActivities.map((activity) => (
+              <Card key={activity.id} className="hover:shadow-lg transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-blue-600" />
+                      <h3 className="font-semibold text-lg">{activity.name}</h3>
+                    </div>
+                    <Badge className={`${activity.status === "active" ? "bg-green-500" : "bg-gray-500"}`}>
+                      {activity.status}
+                    </Badge>
                   </div>
-                  <p className="text-gray-600 mb-2">{destination.country}</p>
-                  <p className="text-sm text-gray-500 mb-3 line-clamp-2">{destination.description}</p>
-                  <p className="text-sm font-medium mb-4">{destination.trips} trips available</p>
+
+                  <Badge variant="secondary" className="mb-3">
+                    {activity.category}
+                  </Badge>
+
+                  <p className="text-sm text-gray-600 mb-4 line-clamp-2">{activity.description}</p>
 
                   <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(destination)}>
+                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleEdit(activity)}>
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </Button>
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => handleDelete(destination.id)}
+                      onClick={() => handleDelete(activity.id)}
                       className="text-red-600 hover:text-red-700"
                     >
                       <Trash2 className="w-4 h-4" />

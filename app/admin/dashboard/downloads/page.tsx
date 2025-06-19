@@ -6,73 +6,97 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Download, FileText, ImageIcon, File, Calendar } from "lucide-react"
 
-interface DownloadItem {
+interface DownloadFile {
   id: string
   name: string
   type: "pdf" | "image" | "document"
   size: string
-  category: string
-  createdAt: string
   downloads: number
+  uploadDate: string
+  category: string
 }
 
 export default function DownloadsPage() {
-  const [downloads] = useState<DownloadItem[]>([
+  const [files] = useState<DownloadFile[]>([
     {
       id: "1",
-      name: "Trip Brochure - Goa Paradise",
+      name: "Travel Brochure 2024",
       type: "pdf",
-      size: "2.4 MB",
-      category: "Brochures",
-      createdAt: "2024-01-15",
+      size: "2.5 MB",
       downloads: 245,
+      uploadDate: "2024-01-15",
+      category: "Brochures",
     },
     {
       id: "2",
-      name: "Kerala Backwaters Itinerary",
+      name: "Destination Guide - Goa",
       type: "pdf",
       size: "1.8 MB",
-      category: "Itineraries",
-      createdAt: "2024-01-14",
       downloads: 189,
+      uploadDate: "2024-01-14",
+      category: "Guides",
     },
     {
       id: "3",
-      name: "Rajasthan Photo Gallery",
-      type: "image",
-      size: "15.2 MB",
-      category: "Gallery",
-      createdAt: "2024-01-13",
-      downloads: 67,
+      name: "Trip Itinerary Template",
+      type: "document",
+      size: "0.5 MB",
+      downloads: 156,
+      uploadDate: "2024-01-13",
+      category: "Templates",
     },
     {
       id: "4",
-      name: "Travel Insurance Guide",
-      type: "document",
-      size: "890 KB",
-      category: "Guides",
-      createdAt: "2024-01-12",
-      downloads: 156,
+      name: "Kerala Photo Gallery",
+      type: "image",
+      size: "5.2 MB",
+      downloads: 98,
+      uploadDate: "2024-01-12",
+      category: "Images",
     },
     {
       id: "5",
       name: "Booking Terms & Conditions",
       type: "pdf",
-      size: "1.2 MB",
+      size: "0.8 MB",
+      downloads: 312,
+      uploadDate: "2024-01-11",
       category: "Legal",
-      createdAt: "2024-01-11",
-      downloads: 89,
+    },
+    {
+      id: "6",
+      name: "Travel Insurance Guide",
+      type: "pdf",
+      size: "1.2 MB",
+      downloads: 78,
+      uploadDate: "2024-01-10",
+      category: "Insurance",
     },
   ])
 
-  const getIcon = (type: string) => {
+  const handleDownload = (file: DownloadFile) => {
+    // Frontend-only download trigger
+    const link = document.createElement("a")
+    link.href = `/placeholder.pdf?filename=${encodeURIComponent(file.name)}`
+    link.download = file.name
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    // Show success message
+    alert(`Downloading ${file.name}...`)
+  }
+
+  const getFileIcon = (type: string) => {
     switch (type) {
       case "pdf":
-        return <FileText className="w-8 h-8 text-red-500" />
+        return <FileText className="w-8 h-8 text-red-600" />
       case "image":
-        return <ImageIcon className="w-8 h-8 text-blue-500" />
+        return <ImageIcon className="w-8 h-8 text-blue-600" />
+      case "document":
+        return <File className="w-8 h-8 text-green-600" />
       default:
-        return <File className="w-8 h-8 text-gray-500" />
+        return <File className="w-8 h-8 text-gray-600" />
     }
   }
 
@@ -82,27 +106,20 @@ export default function DownloadsPage() {
         return "bg-red-100 text-red-800"
       case "image":
         return "bg-blue-100 text-blue-800"
+      case "document":
+        return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
   }
 
-  const handleDownload = (item: DownloadItem) => {
-    // Frontend-only download trigger
-    const link = document.createElement("a")
-    link.href = "#" // In real implementation, this would be the actual file URL
-    link.download = item.name
-    link.click()
-
-    // Show download notification (optional)
-    alert(`Downloading: ${item.name}`)
-  }
+  const categories = [...new Set(files.map((file) => file.category))]
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Downloads</h1>
+          <h1 className="text-3xl font-bold text-gray-900">File Downloads</h1>
           <p className="text-gray-600">Manage downloadable files and resources</p>
         </div>
         <Button>
@@ -111,16 +128,16 @@ export default function DownloadsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
+      {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Files</p>
-                <p className="text-2xl font-bold text-gray-900">{downloads.length}</p>
+                <p className="text-3xl font-bold text-gray-900">{files.length}</p>
               </div>
-              <File className="w-8 h-8 text-blue-500" />
+              <File className="w-8 h-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -130,25 +147,11 @@ export default function DownloadsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Downloads</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {downloads.reduce((sum, item) => sum + item.downloads, 0)}
+                <p className="text-3xl font-bold text-gray-900">
+                  {files.reduce((sum, file) => sum + file.downloads, 0)}
                 </p>
               </div>
-              <Download className="w-8 h-8 text-green-500" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">PDF Files</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {downloads.filter((item) => item.type === "pdf").length}
-                </p>
-              </div>
-              <FileText className="w-8 h-8 text-red-500" />
+              <Download className="w-8 h-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -158,84 +161,69 @@ export default function DownloadsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Categories</p>
-                <p className="text-2xl font-bold text-gray-900">
-                  {new Set(downloads.map((item) => item.category)).size}
+                <p className="text-3xl font-bold text-gray-900">{categories.length}</p>
+              </div>
+              <FileText className="w-8 h-8 text-purple-600" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Avg Downloads</p>
+                <p className="text-3xl font-bold text-gray-900">
+                  {Math.round(files.reduce((sum, file) => sum + file.downloads, 0) / files.length)}
                 </p>
               </div>
-              <ImageIcon className="w-8 h-8 text-purple-500" />
+              <Calendar className="w-8 h-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Downloads List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Downloads</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {downloads.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  {getIcon(item.type)}
-                  <div>
-                    <h3 className="font-semibold text-gray-900">{item.name}</h3>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4" />
-                        {item.createdAt}
-                      </span>
-                      <span>{item.size}</span>
-                      <Badge variant="secondary" className={getTypeColor(item.type)}>
-                        {item.type.toUpperCase()}
-                      </Badge>
-                      <Badge variant="outline">{item.category}</Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900">{item.downloads}</p>
-                    <p className="text-xs text-gray-600">downloads</p>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => handleDownload(item)}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Button variant="outline" className="h-20 flex-col">
-              <FileText className="w-6 h-6 mb-2" />
-              Generate Trip Brochure
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <ImageIcon className="w-6 h-6 mb-2" />
-              Create Photo Gallery
-            </Button>
-            <Button variant="outline" className="h-20 flex-col">
-              <File className="w-6 h-6 mb-2" />
-              Export Trip Data
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Files by Category */}
+      {categories.map((category) => (
+        <Card key={category}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              {category}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {files
+                .filter((file) => file.category === category)
+                .map((file) => (
+                  <Card key={file.id} className="hover:shadow-lg transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0">{getFileIcon(file.type)}</div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-sm mb-2 line-clamp-2">{file.name}</h3>
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className={getTypeColor(file.type)}>{file.type.toUpperCase()}</Badge>
+                            <span className="text-xs text-gray-500">{file.size}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                            <span>{file.downloads} downloads</span>
+                            <span>{file.uploadDate}</span>
+                          </div>
+                          <Button size="sm" className="w-full" onClick={() => handleDownload(file)}>
+                            <Download className="w-4 h-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </CardContent>
+        </Card>
+      ))}
     </div>
   )
 }
