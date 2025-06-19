@@ -8,6 +8,8 @@ import Partners from "@/components/partners"
 import PopularDestinationsCarousel from "@/components/popular-destinations-carousel"
 import InteractiveHolidayPackages from "@/components/interactive-holiday-packages"
 import Testimonials from "@/components/testimonials"
+import FeaturedTripsSection from "@/components/featured-trips-section"
+import CustomizeTourSection from "@/components/customize-tour-section"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, Award, Shield, Plane, MapPin, Calendar, Users } from "lucide-react"
@@ -147,7 +149,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Interactive Holiday Packages - Moved up */}
+      {/* Featured Trips Section */}
+      <ClientWrapper>
+        <FeaturedTripsSection />
+      </ClientWrapper>
+
+      {/* Customize Tour Section */}
+      <ClientWrapper>
+        <CustomizeTourSection />
+      </ClientWrapper>
+
+      {/* Interactive Holiday Packages - Pick Your Perfect Plan */}
       <ClientWrapper>
         <InteractiveHolidayPackages />
       </ClientWrapper>

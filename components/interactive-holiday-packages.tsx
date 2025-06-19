@@ -14,12 +14,13 @@ const packageCategories = {
   popular: {
     title: "Most Popular",
     icon: <TrendingUp className="h-4 w-4" />,
+    route: "/trip-types/popular",
     packages: [
       {
         id: 1,
         title: "Goa Beach Holiday",
         destination: "Goa",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Goa+Beach",
         duration: "4 Days / 3 Nights",
         price: 12999,
         originalPrice: 15999,
@@ -34,7 +35,7 @@ const packageCategories = {
         id: 2,
         title: "Kerala Backwaters",
         destination: "Kerala",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Kerala+Backwaters",
         duration: "5 Days / 4 Nights",
         price: 18999,
         originalPrice: 22999,
@@ -49,7 +50,7 @@ const packageCategories = {
         id: 3,
         title: "Rajasthan Royal Tour",
         destination: "Rajasthan",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Rajasthan+Royal",
         duration: "6 Days / 5 Nights",
         price: 24999,
         originalPrice: 29999,
@@ -64,7 +65,7 @@ const packageCategories = {
         id: 4,
         title: "Himachal Adventure",
         destination: "Himachal Pradesh",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Himachal+Adventure",
         duration: "7 Days / 6 Nights",
         price: 21999,
         originalPrice: 26999,
@@ -80,12 +81,13 @@ const packageCategories = {
   trending: {
     title: "Trending Now",
     icon: <Sparkles className="h-4 w-4" />,
+    route: "/trip-types/trending",
     packages: [
       {
         id: 15,
         title: "Leh Ladakh Adventure",
         destination: "Ladakh",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Leh+Ladakh",
         duration: "8 Days / 7 Nights",
         price: 35999,
         originalPrice: 42999,
@@ -100,7 +102,7 @@ const packageCategories = {
         id: 7,
         title: "Andaman Islands Paradise",
         destination: "Andaman",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Andaman+Islands",
         duration: "6 Days / 5 Nights",
         price: 28999,
         originalPrice: 34999,
@@ -115,7 +117,7 @@ const packageCategories = {
         id: 10,
         title: "Spiti Valley Expedition",
         destination: "Spiti Valley",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Spiti+Valley",
         duration: "9 Days / 8 Nights",
         price: 32999,
         originalPrice: 38999,
@@ -130,7 +132,7 @@ const packageCategories = {
         id: 6,
         title: "Kashmir Paradise",
         destination: "Kashmir",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Kashmir+Paradise",
         duration: "6 Days / 5 Nights",
         price: 28999,
         originalPrice: 34999,
@@ -146,12 +148,13 @@ const packageCategories = {
   budget: {
     title: "Budget Friendly",
     icon: <Users className="h-4 w-4" />,
+    route: "/trip-types/budget",
     packages: [
       {
         id: 8,
         title: "Rishikesh Yoga Retreat",
         destination: "Rishikesh",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Rishikesh+Yoga",
         duration: "4 Days / 3 Nights",
         price: 8999,
         originalPrice: 11999,
@@ -166,7 +169,7 @@ const packageCategories = {
         id: 9,
         title: "Coorg Coffee Plantation",
         destination: "Coorg",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Coorg+Coffee",
         duration: "3 Days / 2 Nights",
         price: 9999,
         originalPrice: 12999,
@@ -181,7 +184,7 @@ const packageCategories = {
         id: 11,
         title: "Pushkar Desert Experience",
         destination: "Pushkar",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Pushkar+Desert",
         duration: "3 Days / 2 Nights",
         price: 7999,
         originalPrice: 9999,
@@ -196,7 +199,7 @@ const packageCategories = {
         id: 12,
         title: "Darjeeling Tea Gardens",
         destination: "Darjeeling",
-        image: "/placeholder.svg?height=200&width=300",
+        image: "/placeholder.svg?height=200&width=300&text=Darjeeling+Tea",
         duration: "4 Days / 3 Nights",
         price: 11999,
         originalPrice: 14999,
@@ -225,14 +228,14 @@ export default function InteractiveHolidayPackages() {
 
   return (
     <section className="py-16 bg-gradient-to-br from-blue-50 to-purple-50">
-      <div className="container">
+      <div className="container px-4 sm:px-6">
         <div className="text-center mb-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Handpicked <span className="text-blue-600">Holiday Packages</span>
+              Pick Your <span className="text-blue-600">Perfect Plan</span>
             </h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Discover our carefully curated collection of holiday packages designed to create unforgettable memories
+              Choose from our carefully curated categories to find the perfect trip that matches your style and budget
             </p>
           </motion.div>
         </div>
@@ -335,15 +338,16 @@ export default function InteractiveHolidayPackages() {
                   </motion.div>
                 ))}
               </div>
+
+              {/* View All Button for Each Category */}
+              <div className="text-center mt-8">
+                <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium">
+                  <Link href={category.route}>View All {category.title} Trips</Link>
+                </Button>
+              </div>
             </TabsContent>
           ))}
         </Tabs>
-
-        <div className="text-center mt-10">
-          <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-full font-medium">
-            <Link href="/holidays">Explore All Packages</Link>
-          </Button>
-        </div>
       </div>
     </section>
   )
