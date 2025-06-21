@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Calendar, MapPin, Users, Plane, Car, Train, Ship, Star, ArrowRight } from "lucide-react"
+import { Calendar, MapPin, Users, Plane, Car, Train, Ship, Star } from "lucide-react"
 import { motion } from "framer-motion"
 
 const destinations = [
@@ -169,7 +169,7 @@ export default function CustomizeTourSection() {
                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Star className="h-8 w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-green-800 mb-2">Request Submitted Successfully!</h3>
+                <h3 className="text-2xl font-bold text-green-800 mb-2 sm:mb-4">Request Submitted Successfully!</h3>
                 <p className="text-green-700 mb-4">
                   Thank you for your custom tour request. Our travel experts will contact you within 24 hours with a
                   personalized itinerary.
@@ -186,17 +186,21 @@ export default function CustomizeTourSection() {
   }
 
   return (
-    <section className="py-12 sm:py-16 bg-gradient-to-br from-orange-50 to-red-50">
-      <div className="container px-4 sm:px-6">
-        <div className="text-center mb-8 sm:mb-12">
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">
-              Can't Find Your <span className="text-orange-600">Perfect Trip?</span>
-            </h2>
-            <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
-              Let us create a personalized travel experience tailored just for you
-            </p>
-          </motion.div>
+    <section className="py-12 sm:py-20 bg-gradient-to-br from-orange-50 to-red-50 relative overflow-hidden">
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-10 left-10 w-32 sm:w-48 h-32 sm:h-48 bg-gradient-to-r from-orange-400 to-red-400 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-10 right-10 w-24 sm:w-40 h-24 sm:h-40 bg-gradient-to-r from-red-400 to-pink-400 rounded-full blur-2xl"></div>
+      </div>
+
+      <div className="container relative z-10 px-4 sm:px-6">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 sm:mb-6 bg-gradient-to-r from-gray-800 to-orange-600 bg-clip-text text-transparent">
+            Can't Find Your Perfect Trip?
+          </h2>
+          <p className="text-lg sm:text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            Let us create a personalized travel experience just for you. Tell us your preferences and we'll craft the
+            perfect itinerary.
+          </p>
         </div>
 
         <div className="max-w-6xl mx-auto">
@@ -236,41 +240,63 @@ export default function CustomizeTourSection() {
               transition={{ duration: 0.8 }}
               className="text-center lg:text-left"
             >
-              <Card className="p-6 sm:p-8 bg-gradient-to-br from-orange-500 to-red-500 text-white border-0 shadow-2xl">
-                <CardContent className="p-0">
-                  <div className="mb-6">
-                    <Plane className="h-12 w-12 sm:h-16 sm:w-16 mx-auto lg:mx-0 mb-4 opacity-80" />
-                    <h3 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Create Your Dream Trip</h3>
-                    <p className="text-sm sm:text-base opacity-90 mb-6">
-                      Fill out our simple form and our travel experts will design a custom itinerary that matches your
-                      preferences, budget, and travel style.
-                    </p>
-                  </div>
+              <Card className="overflow-hidden shadow-2xl border-0 bg-white/90 backdrop-blur-sm">
+                <CardContent className="p-8 sm:p-12">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                    <div className="space-y-6">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Customize Your Dream Tour</h3>
 
-                  <div className="space-y-3 sm:space-y-4 mb-6">
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                      <span>Free consultation with travel experts</span>
+                      <div className="space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-orange-100 rounded-full">
+                            <MapPin className="w-5 h-5 text-orange-600" />
+                          </div>
+                          <span className="text-gray-700">Choose your dream destinations</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-full">
+                            <Calendar className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <span className="text-gray-700">Pick your preferred dates</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-green-100 rounded-full">
+                            <Users className="w-5 h-5 text-green-600" />
+                          </div>
+                          <span className="text-gray-700">Set your group size</span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-purple-100 rounded-full">
+                            <Plane className="w-5 h-5 text-purple-600" />
+                          </div>
+                          <span className="text-gray-700">Select activities & preferences</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                      <span>Personalized itinerary within 24 hours</span>
-                    </div>
-                    <div className="flex items-center gap-3 text-sm">
-                      <div className="w-2 h-2 bg-white rounded-full flex-shrink-0"></div>
-                      <span>Best price guarantee</span>
+
+                    <div className="text-center">
+                      <div className="mb-6">
+                        <div className="w-32 h-32 mx-auto bg-gradient-to-br from-orange-400 to-red-500 rounded-full flex items-center justify-center mb-4">
+                          <Plane className="w-16 h-16 text-white" />
+                        </div>
+                        <p className="text-gray-600 mb-6">
+                          Our travel experts will create a personalized itinerary based on your preferences and budget.
+                        </p>
+                      </div>
+
+                      <Link href="/customize-tour">
+                        <Button
+                          size="lg"
+                          className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white px-8 py-4 text-lg font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
+                        >
+                          Customize Your Tour
+                        </Button>
+                      </Link>
                     </div>
                   </div>
-
-                  <Button
-                    asChild
-                    className="bg-white text-orange-600 hover:bg-gray-50 font-semibold px-6 sm:px-8 py-2.5 sm:py-3 rounded-full w-full sm:w-auto group"
-                  >
-                    <Link href="/customize-tour" className="flex items-center justify-center gap-2">
-                      Customize Your Tour
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
                 </CardContent>
               </Card>
             </motion.div>

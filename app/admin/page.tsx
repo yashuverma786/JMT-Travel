@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Eye, EyeOff, Lock, User } from "lucide-react"
+import { Eye, EyeOff, Lock, User, AlertCircle } from "lucide-react"
 
 export default function AdminLoginPage() {
   const [username, setUsername] = useState("")
@@ -23,14 +23,31 @@ export default function AdminLoginPage() {
     setLoading(true)
     setError("")
 
-    // Mock authentication
-    if (username === "Trip.jmt" && password === "QAZqazJmt#999") {
-      localStorage.setItem("adminAuth", "true")
-      localStorage.setItem("adminUser", username)
-      router.push("/admin/dashboard")
-    } else {
-      setError("Invalid credentials. Please try again.")
+    try {
+      // Simulate API call to backend authentication
+      const response = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username, password }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        localStorage.setItem("adminAuth", data.token)
+        localStorage.setItem("adminUser", data.user.username)
+        localStorage.setItem("adminRole", data.user.role)
+        localStorage.setItem("adminPermissions", JSON.stringify(data.user.permissions))
+        router.push("/admin/dashboard")
+      } else {
+        const errorData = await response.json()
+        setError(errorData.message || "Invalid credentials. Please try again.")
+      }
+    } catch (error) {
+      setError("Network error. Please check your connection and try again.")
     }
+
     setLoading(false)
   }
 
@@ -85,7 +102,12 @@ export default function AdminLoginPage() {
               </div>
             </div>
 
-            {error && <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded">{error}</div>}
+            {error && (
+              <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-md">
+                <AlertCircle className="h-4 w-4" />
+                {error}
+              </div>
+            )}
 
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
@@ -93,9 +115,7 @@ export default function AdminLoginPage() {
           </form>
 
           <div className="mt-6 text-center text-sm text-gray-500">
-            <p>Demo Credentials:</p>
-            <p>Username: Trip.jmt</p>
-            <p>Password: QAZqazJmt#999</p>
+            <p>Contact administrator for access credentials</p>
           </div>
         </CardContent>
       </Card>

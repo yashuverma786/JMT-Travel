@@ -18,10 +18,14 @@ import {
   ChevronRight,
   Route,
   Download,
+  Users,
+  Share2,
 } from "lucide-react"
 
 const navigation = [
   { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+  { name: "User Management", href: "/admin/dashboard/users", icon: Users },
+  { name: "Distribution", href: "/admin/dashboard/distribution", icon: Share2 },
   { name: "Destinations", href: "/admin/dashboard/destinations", icon: MapPin },
   { name: "Trip Types", href: "/admin/dashboard/trip-types", icon: Route },
   { name: "Activities", href: "/admin/dashboard/activities", icon: Activity },
