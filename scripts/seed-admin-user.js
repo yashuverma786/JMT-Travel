@@ -18,9 +18,9 @@ async function seedAdminUser() {
     const db = client.db("jmt_travel") // Use your database name
     const usersCollection = db.collection("admin_users")
 
-    const defaultUsername = "admin"
-    const defaultPassword = "adminpassword" // CHANGE THIS TO A STRONG PASSWORD IN PRODUCTION!
-    const defaultEmail = "admin@jmttravel.com"
+    const defaultUsername = "Trip.jmt"
+    const defaultPassword = "QAZqaz#JMT0202" // Using the password provided by the user
+    const defaultEmail = "admin@jmttravel.com" // Default email for this user
 
     // Check if the default admin user already exists
     const existingUser = await usersCollection.findOne({ username: defaultUsername })

@@ -10,81 +10,77 @@ import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
 
-interface Activity {
+interface TripType {
   _id: string
   name: string
   description: string
-  imageUrl: string
-  category: string
+  iconUrl: string
   createdAt: string
   updatedAt: string
 }
 
-export default function ActivitiesPage() {
-  const [activities, setActivities] = useState<Activity[]>([])
+export default function TripTypesPage() {
+  const [tripTypes, setTripTypes] = useState<TripType[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false)
-  const [editingActivity, setEditingActivity] = useState<Activity | null>(null)
-  const [formData, setFormData] = useState<Omit<Activity, "_id" | "createdAt" | "updatedAt">>({
+  const [editingTripType, setEditingTripType] = useState<TripType | null>(null)
+  const [formData, setFormData] = useState<Omit<TripType, "_id" | "createdAt" | "updatedAt">>({
     name: "",
     description: "",
-    imageUrl: "",
-    category: "General",
+    iconUrl: "",
   })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetchActivities()
+    fetchTripTypes()
   }, [])
 
-  const fetchActivities = async () => {
+  const fetchTripTypes = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/admin/activities")
+      const response = await fetch("/api/admin/trip-types")
       if (response.ok) {
         const data = await response.json()
-        setActivities(data.activities)
+        setTripTypes(data.tripTypes)
       }
     } catch (error) {
-      console.error("Error fetching activities:", error)
+      console.error("Error fetching trip types:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredActivities = activities.filter(
-    (activity) =>
-      activity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      activity.category.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredTripTypes = tripTypes.filter(
+    (type) =>
+      type.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      type.description.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleEdit = (activity: Activity) => {
-    setEditingActivity(activity)
+  const handleEdit = (tripType: TripType) => {
+    setEditingTripType(tripType)
     setFormData({
-      name: activity.name,
-      description: activity.description,
-      imageUrl: activity.imageUrl,
-      category: activity.category,
+      name: tripType.name,
+      description: tripType.description,
+      iconUrl: tripType.iconUrl,
     })
     setShowForm(true)
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this activity?")) {
+    if (confirm("Are you sure you want to delete this trip type?")) {
       try {
-        const response = await fetch(`/api/admin/activities/${id}`, {
+        const response = await fetch(`/api/admin/trip-types/${id}`, {
           method: "DELETE",
         })
         if (response.ok) {
-          setActivities(activities.filter((a) => a._id !== id))
+          setTripTypes(tripTypes.filter((t) => t._id !== id))
         } else {
           const errorData = await response.json()
-          alert(errorData.message || "Failed to delete activity.")
+          alert(errorData.message || "Failed to delete trip type.")
         }
       } catch (error) {
-        console.error("Error deleting activity:", error)
-        alert("An error occurred while deleting the activity.")
+        console.error("Error deleting trip type:", error)
+        alert("An error occurred while deleting the trip type.")
       }
     }
   }
@@ -94,8 +90,8 @@ export default function ActivitiesPage() {
     setLoading(true)
 
     try {
-      const url = editingActivity ? `/api/admin/activities/${editingActivity._id}` : "/api/admin/activities"
-      const method = editingActivity ? "PUT" : "POST"
+      const url = editingTripType ? `/api/admin/trip-types/${editingTripType._id}` : "/api/admin/trip-types"
+      const method = editingTripType ? "PUT" : "POST"
 
       const response = await fetch(url, {
         method,
@@ -106,15 +102,15 @@ export default function ActivitiesPage() {
       })
 
       if (response.ok) {
-        await fetchActivities() // Re-fetch all activities to update the list
+        await fetchTripTypes() // Re-fetch all trip types to update the list
         handleCancel()
       } else {
         const errorData = await response.json()
-        alert(errorData.message || "Failed to save activity.")
+        alert(errorData.message || "Failed to save trip type.")
       }
     } catch (error) {
-      console.error("Error saving activity:", error)
-      alert("An error occurred while saving the activity.")
+      console.error("Error saving trip type:", error)
+      alert("An error occurred while saving the trip type.")
     } finally {
       setLoading(false)
     }
@@ -122,12 +118,11 @@ export default function ActivitiesPage() {
 
   const handleCancel = () => {
     setShowForm(false)
-    setEditingActivity(null)
+    setEditingTripType(null)
     setFormData({
       name: "",
       description: "",
-      imageUrl: "",
-      category: "General",
+      iconUrl: "",
     })
   }
 
@@ -140,15 +135,15 @@ export default function ActivitiesPage() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-gray-900">
-              {editingActivity ? "Edit Activity" : "Add New Activity"}
+              {editingTripType ? "Edit Trip Type" : "Add New Trip Type"}
             </h1>
-            <p className="text-gray-600">Manage activities for your trips</p>
+            <p className="text-gray-600">Define categories for your trips</p>
           </div>
         </div>
 
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Activity Details</CardTitle>
+            <CardTitle>Trip Type Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
@@ -158,7 +153,7 @@ export default function ActivitiesPage() {
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Scuba Diving, Hiking"
+                  placeholder="e.g., Adventure, Family, Romantic"
                   required
                 />
               </div>
@@ -168,32 +163,23 @@ export default function ActivitiesPage() {
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="A brief description of the activity"
+                  placeholder="A brief description of this trip type"
                   rows={3}
                 />
               </div>
               <div>
-                <Label htmlFor="imageUrl">Image URL</Label>
+                <Label htmlFor="iconUrl">Icon URL (Optional)</Label>
                 <Input
-                  id="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/activity-image.jpg"
-                />
-              </div>
-              <div>
-                <Label htmlFor="category">Category</Label>
-                <Input
-                  id="category"
-                  value={formData.category}
-                  onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="e.g., Water Sports, Adventure, Cultural"
+                  id="iconUrl"
+                  value={formData.iconUrl}
+                  onChange={(e) => setFormData({ ...formData, iconUrl: e.target.value })}
+                  placeholder="https://example.com/icon.svg"
                 />
               </div>
 
               <div className="flex gap-4 pt-4">
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingActivity ? "Update Activity" : "Create Activity"}
+                  {loading ? "Saving..." : editingTripType ? "Update Trip Type" : "Create Trip Type"}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
@@ -210,12 +196,12 @@ export default function ActivitiesPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Activities</h1>
-          <p className="text-gray-600">Manage activities that can be part of your trips</p>
+          <h1 className="text-3xl font-bold text-gray-900">Trip Types</h1>
+          <p className="text-gray-600">Manage categories for your travel packages</p>
         </div>
         <Button onClick={() => setShowForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
-          Add Activity
+          Add Trip Type
         </Button>
       </div>
 
@@ -225,7 +211,7 @@ export default function ActivitiesPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search activities..."
+                placeholder="Search trip types..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -238,9 +224,8 @@ export default function ActivitiesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4">Image</th>
+                  <th className="text-left p-4">Icon</th>
                   <th className="text-left p-4">Name</th>
-                  <th className="text-left p-4">Category</th>
                   <th className="text-left p-4">Description</th>
                   <th className="text-left p-4">Actions</th>
                 </tr>
@@ -248,40 +233,41 @@ export default function ActivitiesPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-gray-500">
-                      Loading activities...
+                    <td colSpan={4} className="p-4 text-center text-gray-500">
+                      Loading trip types...
                     </td>
                   </tr>
-                ) : filteredActivities.length === 0 ? (
+                ) : filteredTripTypes.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="p-4 text-center text-gray-500">
-                      No activities found.
+                    <td colSpan={4} className="p-4 text-center text-gray-500">
+                      No trip types found.
                     </td>
                   </tr>
                 ) : (
-                  filteredActivities.map((activity) => (
-                    <tr key={activity._id} className="border-b hover:bg-gray-50">
+                  filteredTripTypes.map((type) => (
+                    <tr key={type._id} className="border-b hover:bg-gray-50">
                       <td className="p-4">
-                        <Image
-                          src={activity.imageUrl || "/placeholder.svg"}
-                          alt={activity.name}
-                          width={64}
-                          height={64}
-                          className="rounded-md object-cover"
-                        />
+                        {type.iconUrl && (
+                          <Image
+                            src={type.iconUrl || "/placeholder.svg"}
+                            alt={type.name}
+                            width={32}
+                            height={32}
+                            className="rounded-md object-cover"
+                          />
+                        )}
                       </td>
-                      <td className="p-4 font-medium">{activity.name}</td>
-                      <td className="p-4 text-gray-600">{activity.category}</td>
-                      <td className="p-4 text-gray-600">{activity.description.substring(0, 50)}...</td>
+                      <td className="p-4 font-medium">{type.name}</td>
+                      <td className="p-4 text-gray-600">{type.description}</td>
                       <td className="p-4">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(activity)}>
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(type)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDelete(activity._id)}
+                            onClick={() => handleDelete(type._id)}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="w-4 h-4" />

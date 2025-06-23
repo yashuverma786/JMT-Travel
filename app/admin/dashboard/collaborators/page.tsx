@@ -6,88 +6,87 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Edit, Trash2, Star } from "lucide-react"
-import { Textarea } from "@/components/ui/textarea"
+import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
-interface Review {
+interface Collaborator {
   _id: string
-  tripId: string // Assuming this is a string ID for display, ObjectId in backend
-  userId: string // Assuming this is a string ID for display, ObjectId in backend
-  rating: number
-  comment: string
-  status: "pending" | "approved" | "rejected"
+  name: string
+  email: string
+  company: string
+  role: string
+  status: "active" | "inactive" | "pending"
   createdAt: string
   updatedAt: string
 }
 
-export default function ReviewsPage() {
-  const [reviews, setReviews] = useState<Review[]>([])
+export default function CollaboratorsPage() {
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false)
-  const [editingReview, setEditingReview] = useState<Review | null>(null)
-  const [formData, setFormData] = useState<Omit<Review, "_id" | "createdAt" | "updatedAt">>({
-    tripId: "",
-    userId: "",
-    rating: 0,
-    comment: "",
-    status: "pending",
+  const [editingCollaborator, setEditingCollaborator] = useState<Collaborator | null>(null)
+  const [formData, setFormData] = useState<Omit<Collaborator, "_id" | "createdAt" | "updatedAt">>({
+    name: "",
+    email: "",
+    company: "",
+    role: "Partner",
+    status: "active",
   })
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    fetchReviews()
+    fetchCollaborators()
   }, [])
 
-  const fetchReviews = async () => {
+  const fetchCollaborators = async () => {
     setLoading(true)
     try {
-      const response = await fetch("/api/admin/reviews")
+      const response = await fetch("/api/admin/collaborators")
       if (response.ok) {
         const data = await response.json()
-        setReviews(data.reviews)
+        setCollaborators(data.collaborators)
       }
     } catch (error) {
-      console.error("Error fetching reviews:", error)
+      console.error("Error fetching collaborators:", error)
     } finally {
       setLoading(false)
     }
   }
 
-  const filteredReviews = reviews.filter(
-    (review) =>
-      review.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.tripId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.userId.toLowerCase().includes(searchTerm.toLowerCase()),
+  const filteredCollaborators = collaborators.filter(
+    (collab) =>
+      collab.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      collab.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      collab.company.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
-  const handleEdit = (review: Review) => {
-    setEditingReview(review)
+  const handleEdit = (collaborator: Collaborator) => {
+    setEditingCollaborator(collaborator)
     setFormData({
-      tripId: review.tripId,
-      userId: review.userId,
-      rating: review.rating,
-      comment: review.comment,
-      status: review.status,
+      name: collaborator.name,
+      email: collaborator.email,
+      company: collaborator.company,
+      role: collaborator.role,
+      status: collaborator.status,
     })
     setShowForm(true)
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this review?")) {
+    if (confirm("Are you sure you want to delete this collaborator?")) {
       try {
-        const response = await fetch(`/api/admin/reviews/${id}`, {
+        const response = await fetch(`/api/admin/collaborators/${id}`, {
           method: "DELETE",
         })
         if (response.ok) {
-          setReviews(reviews.filter((r) => r._id !== id))
+          setCollaborators(collaborators.filter((c) => c._id !== id))
         } else {
           const errorData = await response.json()
-          alert(errorData.message || "Failed to delete review.")
+          alert(errorData.message || "Failed to delete collaborator.")
         }
       } catch (error) {
-        console.error("Error deleting review:", error)
-        alert("An error occurred while deleting the review.")
+        console.error("Error deleting collaborator:", error)
+        alert("An error occurred while deleting the collaborator.")
       }
     }
   }
@@ -97,8 +96,10 @@ export default function ReviewsPage() {
     setLoading(true)
 
     try {
-      const url = editingReview ? `/api/admin/reviews/${editingReview._id}` : "/api/admin/reviews"
-      const method = editingReview ? "PUT" : "POST"
+      const url = editingCollaborator
+        ? `/api/admin/collaborators/${editingCollaborator._id}`
+        : "/api/admin/collaborators"
+      const method = editingCollaborator ? "PUT" : "POST"
 
       const response = await fetch(url, {
         method,
@@ -109,15 +110,15 @@ export default function ReviewsPage() {
       })
 
       if (response.ok) {
-        await fetchReviews() // Re-fetch all reviews to update the list
+        await fetchCollaborators() // Re-fetch all collaborators to update the list
         handleCancel()
       } else {
         const errorData = await response.json()
-        alert(errorData.message || "Failed to save review.")
+        alert(errorData.message || "Failed to save collaborator.")
       }
     } catch (error) {
-      console.error("Error saving review:", error)
-      alert("An error occurred while saving the review.")
+      console.error("Error saving collaborator:", error)
+      alert("An error occurred while saving the collaborator.")
     } finally {
       setLoading(false)
     }
@@ -125,13 +126,13 @@ export default function ReviewsPage() {
 
   const handleCancel = () => {
     setShowForm(false)
-    setEditingReview(null)
+    setEditingCollaborator(null)
     setFormData({
-      tripId: "",
-      userId: "",
-      rating: 0,
-      comment: "",
-      status: "pending",
+      name: "",
+      email: "",
+      company: "",
+      role: "Partner",
+      status: "active",
     })
   }
 
@@ -143,65 +144,64 @@ export default function ReviewsPage() {
             ← Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">{editingReview ? "Edit Review" : "Add New Review"}</h1>
-            <p className="text-gray-600">Manage customer reviews for trips</p>
+            <h1 className="text-3xl font-bold text-gray-900">
+              {editingCollaborator ? "Edit Collaborator" : "Add New Collaborator"}
+            </h1>
+            <p className="text-gray-600">Manage your partners and collaborators</p>
           </div>
         </div>
 
         <Card className="max-w-2xl">
           <CardHeader>
-            <CardTitle>Review Details</CardTitle>
+            <CardTitle>Collaborator Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
               <div>
-                <Label htmlFor="tripId">Trip ID</Label>
+                <Label htmlFor="name">Name</Label>
                 <Input
-                  id="tripId"
-                  value={formData.tripId}
-                  onChange={(e) => setFormData({ ...formData, tripId: e.target.value })}
-                  placeholder="Enter Trip ID"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g., John Doe"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="userId">User ID</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="userId"
-                  value={formData.userId}
-                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                  placeholder="Enter User ID"
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="e.g., john.doe@example.com"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="rating">Rating (1-5)</Label>
+                <Label htmlFor="company">Company</Label>
                 <Input
-                  id="rating"
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={formData.rating}
-                  onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
+                  id="company"
+                  value={formData.company}
+                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+                  placeholder="e.g., ABC Hotels"
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="comment">Comment</Label>
-                <Textarea
-                  id="comment"
-                  value={formData.comment}
-                  onChange={(e) => setFormData({ ...formData, comment: e.target.value })}
-                  placeholder="Enter review comment"
-                  rows={4}
-                  required
+                <Label htmlFor="role">Role</Label>
+                <Input
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  placeholder="e.g., Hotel Manager, Tour Operator"
                 />
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: "pending" | "approved" | "rejected") =>
+                  onValueChange={(value: "active" | "inactive" | "pending") =>
                     setFormData({ ...formData, status: value })
                   }
                 >
@@ -209,16 +209,16 @@ export default function ReviewsPage() {
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="approved">Approved</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="flex gap-4 pt-4">
                 <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingReview ? "Update Review" : "Create Review"}
+                  {loading ? "Saving..." : editingCollaborator ? "Update Collaborator" : "Create Collaborator"}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
@@ -235,10 +235,13 @@ export default function ReviewsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Reviews</h1>
-          <p className="text-gray-600">Manage customer reviews and ratings</p>
+          <h1 className="text-3xl font-bold text-gray-900">Collaborators</h1>
+          <p className="text-gray-600">Manage your business partners and external contributors</p>
         </div>
-        {/* No "Add Review" button as reviews are typically submitted from frontend */}
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Collaborator
+        </Button>
       </div>
 
       <Card>
@@ -247,7 +250,7 @@ export default function ReviewsPage() {
             <div className="relative flex-1 max-w-sm">
               <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
               <Input
-                placeholder="Search reviews..."
+                placeholder="Search collaborators..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -260,10 +263,10 @@ export default function ReviewsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4">Trip ID</th>
-                  <th className="text-left p-4">User ID</th>
-                  <th className="text-left p-4">Rating</th>
-                  <th className="text-left p-4">Comment</th>
+                  <th className="text-left p-4">Name</th>
+                  <th className="text-left p-4">Email</th>
+                  <th className="text-left p-4">Company</th>
+                  <th className="text-left p-4">Role</th>
                   <th className="text-left p-4">Status</th>
                   <th className="text-left p-4">Actions</th>
                 </tr>
@@ -272,46 +275,44 @@ export default function ReviewsPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="p-4 text-center text-gray-500">
-                      Loading reviews...
+                      Loading collaborators...
                     </td>
                   </tr>
-                ) : filteredReviews.length === 0 ? (
+                ) : filteredCollaborators.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-4 text-center text-gray-500">
-                      No reviews found.
+                      No collaborators found.
                     </td>
                   </tr>
                 ) : (
-                  filteredReviews.map((review) => (
-                    <tr key={review._id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-medium">{review.tripId}</td>
-                      <td className="p-4 text-gray-600">{review.userId}</td>
-                      <td className="p-4 flex items-center gap-1">
-                        {review.rating} <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      </td>
-                      <td className="p-4 text-gray-600">{review.comment.substring(0, 70)}...</td>
+                  filteredCollaborators.map((collab) => (
+                    <tr key={collab._id} className="border-b hover:bg-gray-50">
+                      <td className="p-4 font-medium">{collab.name}</td>
+                      <td className="p-4 text-gray-600">{collab.email}</td>
+                      <td className="p-4 text-gray-600">{collab.company}</td>
+                      <td className="p-4 text-gray-600">{collab.role}</td>
                       <td className="p-4">
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            review.status === "approved"
+                            collab.status === "active"
                               ? "bg-green-100 text-green-800"
-                              : review.status === "pending"
+                              : collab.status === "pending"
                                 ? "bg-yellow-100 text-yellow-800"
                                 : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {review.status}
+                          {collab.status}
                         </span>
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(review)}>
+                          <Button size="sm" variant="outline" onClick={() => handleEdit(collab)}>
                             <Edit className="w-4 h-4" />
                           </Button>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDelete(review._id)}
+                            onClick={() => handleDelete(collab._id)}
                             className="text-red-600 hover:text-red-700"
                           >
                             <Trash2 className="w-4 h-4" />
