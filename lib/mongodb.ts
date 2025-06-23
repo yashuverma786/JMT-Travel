@@ -29,9 +29,14 @@ if (process.env.NODE_ENV === "development") {
 }
 
 export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
-  const client = await clientPromise
-  const db = client.db("jmt_travel")
-  return { client, db }
+  try {
+    const client = await clientPromise
+    const db = client.db("jmt_travel")
+    return { client, db }
+  } catch (error) {
+    console.error("MongoDB connection error:", error)
+    throw new Error("Failed to connect to database")
+  }
 }
 
 export default clientPromise
