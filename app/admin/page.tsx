@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react"
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("")
@@ -26,18 +26,36 @@ export default function AdminLogin() {
       try {
         const token = localStorage.getItem("adminToken")
         if (token) {
-          // Verify token is still valid
-          const response = await fetch("/api/admin/auth/verify", {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          })
+          console.log("Existing token found, verifying...")
 
-          if (response.ok) {
-            router.push("/admin/dashboard")
-            return
-          } else {
-            // Token is invalid, remove it
+          // Add timeout for the verification check
+          const controller = new AbortController()
+          const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
+
+          try {
+            const response = await fetch("/api/admin/auth/verify", {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              signal: controller.signal,
+            })
+
+            clearTimeout(timeoutId)
+
+            if (response.ok) {
+              console.log("Token still valid, redirecting to dashboard")
+              router.push("/admin/dashboard")
+              return
+            } else {
+              console.log("Token invalid, clearing storage")
+              localStorage.removeItem("adminToken")
+              localStorage.removeItem("adminAuth")
+              localStorage.removeItem("adminUser")
+            }
+          } catch (fetchError) {
+            clearTimeout(timeoutId)
+            console.error("Token verification failed:", fetchError)
+            // Clear potentially corrupted auth data
             localStorage.removeItem("adminToken")
             localStorage.removeItem("adminAuth")
             localStorage.removeItem("adminUser")
@@ -61,6 +79,8 @@ export default function AdminLogin() {
     setLoading(true)
     setError("")
 
+    console.log("Attempting login for:", username)
+
     try {
       const response = await fetch("/api/admin/auth/login", {
         method: "POST",
@@ -71,16 +91,21 @@ export default function AdminLogin() {
       })
 
       const data = await response.json()
+      console.log("Login response status:", response.status)
 
       if (response.ok) {
+        console.log("Login successful, storing auth data")
         // Store authentication data
         localStorage.setItem("adminToken", data.token)
         localStorage.setItem("adminAuth", "true")
         localStorage.setItem("adminUser", JSON.stringify(data.user))
 
-        // Redirect to dashboard
-        router.push("/admin/dashboard")
+        // Small delay to ensure storage is complete
+        setTimeout(() => {
+          router.push("/admin/dashboard")
+        }, 100)
       } else {
+        console.error("Login failed:", data.message)
         setError(data.message || "Login failed")
       }
     } catch (error) {
@@ -94,9 +119,9 @@ export default function AdminLogin() {
   if (checking) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <span>Checking authentication...</span>
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-600" />
+          <p className="text-gray-600">Checking existing session...</p>
         </div>
       </div>
     )
@@ -106,13 +131,14 @@ export default function AdminLogin() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+          <CardTitle className="text-2xl font-bold text-center">JMT Travel Admin</CardTitle>
           <CardDescription className="text-center">Enter your credentials to access the admin panel</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
@@ -127,6 +153,7 @@ export default function AdminLogin() {
                 required
                 disabled={loading}
                 placeholder="Enter your username"
+                autoComplete="username"
               />
             </div>
 
@@ -141,6 +168,7 @@ export default function AdminLogin() {
                   required
                   disabled={loading}
                   placeholder="Enter your password"
+                  autoComplete="current-password"
                 />
                 <Button
                   type="button"
@@ -167,10 +195,16 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-gray-600">
-            <p>Default credentials:</p>
-            <p className="font-mono text-xs">Username: Trip.jmt</p>
-            <p className="font-mono text-xs">Password: QAZqaz#JMT0202</p>
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <p className="text-sm font-medium text-blue-900 mb-2">Default Admin Credentials:</p>
+            <div className="space-y-1 text-sm text-blue-800">
+              <p>
+                <span className="font-medium">Username:</span> Trip.jmt
+              </p>
+              <p>
+                <span className="font-medium">Password:</span> QAZqaz#JMT0202
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
