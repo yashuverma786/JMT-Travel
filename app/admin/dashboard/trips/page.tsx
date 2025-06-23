@@ -1,64 +1,96 @@
 "use client"
 
+import { Badge } from "@/components/ui/badge"
+
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Plus, Edit, Trash2 } from "lucide-react"
-import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Plus, Edit, Trash2 } from "lucide-react"
+import Image from "next/image"
+
+interface FAQItem {
+  question: string
+  answer: string
+}
+
+interface ItineraryItem {
+  day: number
+  title: string
+  description: string
+}
 
 interface Trip {
   _id: string
   title: string
-  destination: string
-  tripType: string
+  destination: string // Could be an ID linking to Destinations collection
+  tripType: string // Could be an ID linking to TripTypes collection
   durationDays: number
   durationNights: number
-  price: number
-  originalPrice?: number
-  discount?: number
-  rating?: number
-  reviewsCount?: number
-  imageUrl: string
-  description: string
-  highlights: string[]
+  priceAdult: number
+  priceChild?: number
+  originalPriceAdult?: number
+  discount?: number // Percentage
+  minPax?: number
+  maxPax?: number
+  trending: boolean
+  overview: string
+  itinerary: ItineraryItem[]
   inclusions: string[]
   exclusions: string[]
-  itinerary: { day: number; title: string; description: string }[]
-  groupSize?: number
-  status: string
+  tripInfo?: {
+    transport?: string
+    meals?: string
+    accommodation?: string
+  }
+  mapEmbed?: string // Iframe code for map
+  faqs: FAQItem[]
+  imageUrls: string[] // Multiple image URLs
+  status: "active" | "inactive" | "draft"
 }
 
-export default function TripsPage() {
+const initialFormData: Omit<Trip, "_id"> = {
+  title: "",
+  destination: "",
+  tripType: "",
+  durationDays: 0,
+  durationNights: 0,
+  priceAdult: 0,
+  priceChild: undefined,
+  originalPriceAdult: undefined,
+  discount: undefined,
+  minPax: undefined,
+  maxPax: undefined,
+  trending: false,
+  overview: "",
+  itinerary: [],
+  inclusions: [],
+  exclusions: [],
+  tripInfo: {},
+  mapEmbed: "",
+  faqs: [],
+  imageUrls: [],
+  status: "draft",
+}
+
+export default function TripsAdminPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
-  const [formData, setFormData] = useState<Omit<Trip, "_id">>({
-    title: "",
-    destination: "",
-    tripType: "",
-    durationDays: 0,
-    durationNights: 0,
-    price: 0,
-    originalPrice: undefined,
-    discount: undefined,
-    rating: undefined,
-    reviewsCount: undefined,
-    imageUrl: "",
-    description: "",
-    highlights: [],
-    inclusions: [],
-    exclusions: [],
-    itinerary: [],
-    groupSize: undefined,
-    status: "active",
-  })
+  const [formData, setFormData] = useState<Omit<Trip, "_id">>(initialFormData)
   const [loading, setLoading] = useState(false)
+
+  // States for managing dynamic array inputs in the form
+  const [currentImageUrl, setCurrentImageUrl] = useState("")
+  const [currentInclusion, setCurrentInclusion] = useState("")
+  const [currentExclusion, setCurrentExclusion] = useState("")
+  const [currentFaq, setCurrentFaq] = useState<FAQItem>({ question: "", answer: "" })
 
   useEffect(() => {
     fetchTrips()
@@ -82,38 +114,53 @@ export default function TripsPage() {
   const filteredTrips = trips.filter(
     (trip) =>
       trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.destination.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      trip.tripType.toLowerCase().includes(searchTerm.toLowerCase()),
+      trip.destination.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleEdit = (trip: Trip) => {
     setEditingTrip(trip)
+    // Ensure all fields, especially arrays, are correctly initialized from the trip data
     setFormData({
-      ...trip,
-      // Ensure arrays are not null/undefined for form inputs
-      highlights: trip.highlights || [],
+      title: trip.title || "",
+      destination: trip.destination || "",
+      tripType: trip.tripType || "",
+      durationDays: trip.durationDays || 0,
+      durationNights: trip.durationNights || 0,
+      priceAdult: trip.priceAdult || 0,
+      priceChild: trip.priceChild,
+      originalPriceAdult: trip.originalPriceAdult,
+      discount: trip.discount,
+      minPax: trip.minPax,
+      maxPax: trip.maxPax,
+      trending: trip.trending || false,
+      overview: trip.overview || "",
+      itinerary: trip.itinerary || [],
       inclusions: trip.inclusions || [],
       exclusions: trip.exclusions || [],
-      itinerary: trip.itinerary || [],
+      tripInfo: trip.tripInfo || {},
+      mapEmbed: trip.mapEmbed || "",
+      faqs: trip.faqs || [],
+      imageUrls: trip.imageUrls || [],
+      status: trip.status || "draft",
     })
     setShowForm(true)
   }
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this trip?")) {
+      setLoading(true)
       try {
-        const response = await fetch(`/api/admin/trips/${id}`, {
-          method: "DELETE",
-        })
+        const response = await fetch(`/api/admin/trips/${id}`, { method: "DELETE" })
         if (response.ok) {
           setTrips(trips.filter((t) => t._id !== id))
         } else {
-          const errorData = await response.json()
-          alert(errorData.message || "Failed to delete trip.")
+          alert("Failed to delete trip.")
         }
       } catch (error) {
         console.error("Error deleting trip:", error)
-        alert("An error occurred while deleting the trip.")
+        alert("An error occurred.")
+      } finally {
+        setLoading(false)
       }
     }
   }
@@ -121,21 +168,17 @@ export default function TripsPage() {
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    const url = editingTrip ? `/api/admin/trips/${editingTrip._id}` : "/api/admin/trips"
+    const method = editingTrip ? "PUT" : "POST"
 
     try {
-      const url = editingTrip ? `/api/admin/trips/${editingTrip._id}` : "/api/admin/trips"
-      const method = editingTrip ? "PUT" : "POST"
-
       const response = await fetch(url, {
         method,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       })
-
       if (response.ok) {
-        await fetchTrips() // Re-fetch all trips to update the list
+        await fetchTrips()
         handleCancel()
       } else {
         const errorData = await response.json()
@@ -143,7 +186,7 @@ export default function TripsPage() {
       }
     } catch (error) {
       console.error("Error saving trip:", error)
-      alert("An error occurred while saving the trip.")
+      alert("An error occurred.")
     } finally {
       setLoading(false)
     }
@@ -152,85 +195,75 @@ export default function TripsPage() {
   const handleCancel = () => {
     setShowForm(false)
     setEditingTrip(null)
-    setFormData({
-      title: "",
-      destination: "",
-      tripType: "",
-      durationDays: 0,
-      durationNights: 0,
-      price: 0,
-      originalPrice: undefined,
-      discount: undefined,
-      rating: undefined,
-      reviewsCount: undefined,
-      imageUrl: "",
-      description: "",
-      highlights: [],
-      inclusions: [],
-      exclusions: [],
-      itinerary: [],
-      groupSize: undefined,
-      status: "active",
-    })
+    setFormData(initialFormData)
+    setCurrentImageUrl("")
+    setCurrentInclusion("")
+    setCurrentExclusion("")
+    setCurrentFaq({ question: "", answer: "" })
   }
 
-  const handleArrayChange = (field: keyof Omit<Trip, "_id">, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value
-        .split(",")
-        .map((item) => item.trim())
-        .filter(Boolean),
-    }))
+  // Helper functions for managing array inputs
+  const addToArray = (
+    field: keyof Omit<Trip, "_id">,
+    value: string,
+    resetter: React.Dispatch<React.SetStateAction<string>>,
+  ) => {
+    if (value && !(formData[field] as string[]).includes(value)) {
+      setFormData((prev) => ({ ...prev, [field]: [...(prev[field] as string[]), value] }))
+      resetter("")
+    }
   }
-
-  const handleItineraryChange = (index: number, field: string, value: string) => {
-    const newItinerary = [...formData.itinerary]
-    newItinerary[index] = { ...newItinerary[index], [field]: value }
-    setFormData({ ...formData, itinerary: newItinerary })
+  const removeFromArray = (field: keyof Omit<Trip, "_id">, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: (prev[field] as string[]).filter((item) => item !== value) }))
   }
 
   const addItineraryDay = () => {
-    setFormData({
-      ...formData,
-      itinerary: [...formData.itinerary, { day: formData.itinerary.length + 1, title: "", description: "" }],
-    })
+    setFormData((prev) => ({
+      ...prev,
+      itinerary: [...prev.itinerary, { day: prev.itinerary.length + 1, title: "", description: "" }],
+    }))
+  }
+  const removeItineraryDay = (index: number) => {
+    setFormData((prev) => ({ ...prev, itinerary: prev.itinerary.filter((_, i) => i !== index) }))
+  }
+  const handleItineraryChange = (index: number, field: keyof ItineraryItem, value: string | number) => {
+    const updatedItinerary = formData.itinerary.map((item, i) => (i === index ? { ...item, [field]: value } : item))
+    setFormData((prev) => ({ ...prev, itinerary: updatedItinerary }))
   }
 
-  const removeItineraryDay = (index: number) => {
-    setFormData({
-      ...formData,
-      itinerary: formData.itinerary.filter((_, i) => i !== index),
-    })
+  const addFaqItem = () => {
+    if (currentFaq.question && currentFaq.answer) {
+      setFormData((prev) => ({ ...prev, faqs: [...prev.faqs, currentFaq] }))
+      setCurrentFaq({ question: "", answer: "" })
+    }
+  }
+  const removeFaqItem = (index: number) => {
+    setFormData((prev) => ({ ...prev, faqs: prev.faqs.filter((_, i) => i !== index) }))
   }
 
   if (showForm) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 p-4 md:p-6">
         <div className="flex items-center gap-4">
           <Button variant="outline" onClick={handleCancel}>
             ← Back
           </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{editingTrip ? "Edit Trip" : "Add New Trip"}</h1>
-            <p className="text-gray-600">Manage travel packages and itineraries</p>
-          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{editingTrip ? "Edit Trip" : "Add New Trip"}</h1>
         </div>
-
-        <Card className="max-w-4xl">
+        <Card className="max-w-4xl mx-auto">
           <CardHeader>
             <CardTitle>Trip Details</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
+              {/* Basic Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="title">Title</Label>
+                  <Label htmlFor="title">Title (H1)</Label>
                   <Input
                     id="title"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    placeholder="e.g., Exotic Bali Getaway"
                     required
                   />
                 </div>
@@ -240,7 +273,6 @@ export default function TripsPage() {
                     id="destination"
                     value={formData.destination}
                     onChange={(e) => setFormData({ ...formData, destination: e.target.value })}
-                    placeholder="e.g., Bali"
                     required
                   />
                 </div>
@@ -250,114 +282,17 @@ export default function TripsPage() {
                     id="tripType"
                     value={formData.tripType}
                     onChange={(e) => setFormData({ ...formData, tripType: e.target.value })}
-                    placeholder="e.g., Beach, Adventure, Family"
                     required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
-                    value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/trip-image.jpg"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="durationDays">Duration (Days)</Label>
-                  <Input
-                    id="durationDays"
-                    type="number"
-                    value={formData.durationDays}
-                    onChange={(e) => setFormData({ ...formData, durationDays: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="durationNights">Duration (Nights)</Label>
-                  <Input
-                    id="durationNights"
-                    type="number"
-                    value={formData.durationNights}
-                    onChange={(e) => setFormData({ ...formData, durationNights: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="groupSize">Group Size (Optional)</Label>
-                  <Input
-                    id="groupSize"
-                    type="number"
-                    value={formData.groupSize || ""}
-                    onChange={(e) => setFormData({ ...formData, groupSize: Number(e.target.value) || undefined })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="price">Price (₹)</Label>
-                  <Input
-                    id="price"
-                    type="number"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="originalPrice">Original Price (₹, Optional)</Label>
-                  <Input
-                    id="originalPrice"
-                    type="number"
-                    value={formData.originalPrice || ""}
-                    onChange={(e) => setFormData({ ...formData, originalPrice: Number(e.target.value) || undefined })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="discount">Discount (%, Optional)</Label>
-                  <Input
-                    id="discount"
-                    type="number"
-                    value={formData.discount || ""}
-                    onChange={(e) => setFormData({ ...formData, discount: Number(e.target.value) || undefined })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="rating">Rating (Optional)</Label>
-                  <Input
-                    id="rating"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="5"
-                    value={formData.rating || ""}
-                    onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) || undefined })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="reviewsCount">Reviews Count (Optional)</Label>
-                  <Input
-                    id="reviewsCount"
-                    type="number"
-                    value={formData.reviewsCount || ""}
-                    onChange={(e) => setFormData({ ...formData, reviewsCount: Number(e.target.value) || undefined })}
                   />
                 </div>
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
                     value={formData.status}
-                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                    onValueChange={(value: Trip["status"]) => setFormData({ ...formData, status: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select status" />
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="active">Active</SelectItem>
@@ -368,86 +303,315 @@ export default function TripsPage() {
                 </div>
               </div>
 
+              {/* Duration & Pax */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                  <Label htmlFor="durationDays">Days</Label>
+                  <Input
+                    type="number"
+                    id="durationDays"
+                    value={formData.durationDays}
+                    onChange={(e) => setFormData({ ...formData, durationDays: Number.parseInt(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="durationNights">Nights</Label>
+                  <Input
+                    type="number"
+                    id="durationNights"
+                    value={formData.durationNights}
+                    onChange={(e) => setFormData({ ...formData, durationNights: Number.parseInt(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="minPax">Min Pax</Label>
+                  <Input
+                    type="number"
+                    id="minPax"
+                    value={formData.minPax || ""}
+                    onChange={(e) => setFormData({ ...formData, minPax: Number.parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="maxPax">Max Pax</Label>
+                  <Input
+                    type="number"
+                    id="maxPax"
+                    value={formData.maxPax || ""}
+                    onChange={(e) => setFormData({ ...formData, maxPax: Number.parseInt(e.target.value) || undefined })}
+                  />
+                </div>
+              </div>
+
+              {/* Pricing */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="priceAdult">Price Adult (₹)</Label>
+                  <Input
+                    type="number"
+                    id="priceAdult"
+                    value={formData.priceAdult}
+                    onChange={(e) => setFormData({ ...formData, priceAdult: Number.parseFloat(e.target.value) })}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="priceChild">Price Child (₹)</Label>
+                  <Input
+                    type="number"
+                    id="priceChild"
+                    value={formData.priceChild || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, priceChild: Number.parseFloat(e.target.value) || undefined })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="originalPriceAdult">Original Price Adult (₹)</Label>
+                  <Input
+                    type="number"
+                    id="originalPriceAdult"
+                    value={formData.originalPriceAdult || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, originalPriceAdult: Number.parseFloat(e.target.value) || undefined })
+                    }
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="discount">Discount (%)</Label>
+                  <Input
+                    type="number"
+                    id="discount"
+                    value={formData.discount || ""}
+                    onChange={(e) =>
+                      setFormData({ ...formData, discount: Number.parseFloat(e.target.value) || undefined })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="trending"
+                  checked={formData.trending}
+                  onCheckedChange={(checked) => setFormData({ ...formData, trending: Boolean(checked) })}
+                />
+                <Label htmlFor="trending">Mark as Trending (for Special Offers)</Label>
+              </div>
+
+              {/* Overview */}
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="overview">Overview</Label>
                 <Textarea
-                  id="description"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Detailed description of the trip"
+                  id="overview"
+                  value={formData.overview}
+                  onChange={(e) => setFormData({ ...formData, overview: e.target.value })}
                   rows={4}
                 />
               </div>
 
+              {/* Image URLs */}
               <div>
-                <Label htmlFor="highlights">Highlights (comma-separated)</Label>
-                <Textarea
-                  id="highlights"
-                  value={formData.highlights.join(", ")}
-                  onChange={(e) => handleArrayChange("highlights", e.target.value)}
-                  placeholder="Beach activities, Cultural tours, Mountain trekking"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="inclusions">Inclusions (comma-separated)</Label>
-                <Textarea
-                  id="inclusions"
-                  value={formData.inclusions.join(", ")}
-                  onChange={(e) => handleArrayChange("inclusions", e.target.value)}
-                  placeholder="Flights, Accommodation, Meals, Transfers"
-                  rows={2}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="exclusions">Exclusions (comma-separated)</Label>
-                <Textarea
-                  id="exclusions"
-                  value={formData.exclusions.join(", ")}
-                  onChange={(e) => handleArrayChange("exclusions", e.target.value)}
-                  placeholder="Visa fees, Personal expenses, Travel insurance"
-                  rows={2}
-                />
-              </div>
-
-              <div className="space-y-4">
-                <Label>Itinerary</Label>
-                {formData.itinerary.map((item, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <h3 className="font-semibold">Day {item.day}</h3>
-                      <Button type="button" variant="destructive" size="sm" onClick={() => removeItineraryDay(index)}>
-                        Remove
+                <Label>Image URLs (for multiple images)</Label>
+                <div className="flex gap-2 mb-2">
+                  <Input
+                    value={currentImageUrl}
+                    onChange={(e) => setCurrentImageUrl(e.target.value)}
+                    placeholder="Enter image URL"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => addToArray("imageUrls", currentImageUrl, setCurrentImageUrl)}
+                  >
+                    Add Image
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {formData.imageUrls.map((img, idx) => (
+                    <div key={idx} className="relative p-1 border rounded">
+                      <Image
+                        src={img || "/placeholder.svg"}
+                        alt={`Trip image ${idx + 1}`}
+                        width={80}
+                        height={80}
+                        className="object-cover rounded"
+                      />
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                        onClick={() => removeFromArray("imageUrls", img)}
+                      >
+                        X
                       </Button>
                     </div>
-                    <div className="space-y-2">
-                      <div>
-                        <Label htmlFor={`itinerary-title-${index}`}>Title</Label>
-                        <Input
-                          id={`itinerary-title-${index}`}
-                          value={item.title}
-                          onChange={(e) => handleItineraryChange(index, "title", e.target.value)}
-                          placeholder="e.g., Arrival in Bali & Beach Relaxation"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor={`itinerary-description-${index}`}>Description</Label>
-                        <Textarea
-                          id={`itinerary-description-${index}`}
-                          value={item.description}
-                          onChange={(e) => handleItineraryChange(index, "description", e.target.value)}
-                          placeholder="Detailed activities for the day"
-                          rows={3}
-                        />
-                      </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Itinerary */}
+              <div className="space-y-2">
+                <Label>Itinerary</Label>
+                {formData.itinerary.map((item, index) => (
+                  <Card key={index} className="p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label>Day {item.day}</Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeItineraryDay(index)}>
+                        Remove Day
+                      </Button>
                     </div>
+                    <Input
+                      placeholder="Day Title"
+                      value={item.title}
+                      onChange={(e) => handleItineraryChange(index, "title", e.target.value)}
+                    />
+                    <Textarea
+                      placeholder="Day Description"
+                      value={item.description}
+                      onChange={(e) => handleItineraryChange(index, "description", e.target.value)}
+                      rows={2}
+                    />
                   </Card>
                 ))}
                 <Button type="button" variant="outline" onClick={addItineraryDay}>
-                  Add Day to Itinerary
+                  Add Itinerary Day
                 </Button>
+              </div>
+
+              {/* Inclusions & Exclusions */}
+              <div>
+                <Label>Inclusions (comma-separated)</Label>
+                <Textarea
+                  value={formData.inclusions.join(", ")}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      inclusions: e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  rows={2}
+                />
+              </div>
+              <div>
+                <Label>Exclusions (comma-separated)</Label>
+                <Textarea
+                  value={formData.exclusions.join(", ")}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      exclusions: e.target.value
+                        .split(",")
+                        .map((s) => s.trim())
+                        .filter(Boolean),
+                    })
+                  }
+                  rows={2}
+                />
+              </div>
+
+              {/* Trip Info */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Additional Trip Info</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div>
+                    <Label>Transport</Label>
+                    <Input
+                      value={formData.tripInfo?.transport || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tripInfo: { ...formData.tripInfo, transport: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Meals</Label>
+                    <Input
+                      value={formData.tripInfo?.meals || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tripInfo: { ...formData.tripInfo, meals: e.target.value } })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label>Accommodation</Label>
+                    <Input
+                      value={formData.tripInfo?.accommodation || ""}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tripInfo: { ...formData.tripInfo, accommodation: e.target.value } })
+                      }
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Map Embed */}
+              <div>
+                <Label htmlFor="mapEmbed">Map Embed Code (iframe)</Label>
+                <Textarea
+                  id="mapEmbed"
+                  value={formData.mapEmbed}
+                  onChange={(e) => setFormData({ ...formData, mapEmbed: e.target.value })}
+                  rows={3}
+                  placeholder='<iframe src="..."></iframe>'
+                />
+              </div>
+
+              {/* FAQs */}
+              <div className="space-y-2">
+                <Label>FAQs</Label>
+                {formData.faqs.map((faq, index) => (
+                  <Card key={index} className="p-3 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <Label>FAQ {index + 1}</Label>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeFaqItem(index)}>
+                        Remove FAQ
+                      </Button>
+                    </div>
+                    <Input
+                      placeholder="Question"
+                      value={faq.question}
+                      onChange={(e) => {
+                        const newFaqs = [...formData.faqs]
+                        newFaqs[index].question = e.target.value
+                        setFormData({ ...formData, faqs: newFaqs })
+                      }}
+                    />
+                    <Textarea
+                      placeholder="Answer"
+                      value={faq.answer}
+                      onChange={(e) => {
+                        const newFaqs = [...formData.faqs]
+                        newFaqs[index].answer = e.target.value
+                        setFormData({ ...formData, faqs: newFaqs })
+                      }}
+                      rows={2}
+                    />
+                  </Card>
+                ))}
+                <Card className="p-3 space-y-2">
+                  <Input
+                    placeholder="New FAQ Question"
+                    value={currentFaq.question}
+                    onChange={(e) => setCurrentFaq({ ...currentFaq, question: e.target.value })}
+                  />
+                  <Textarea
+                    placeholder="New FAQ Answer"
+                    value={currentFaq.answer}
+                    onChange={(e) => setCurrentFaq({ ...currentFaq, answer: e.target.value })}
+                    rows={2}
+                  />
+                  <Button type="button" variant="outline" onClick={addFaqItem}>
+                    Add FAQ Item
+                  </Button>
+                </Card>
               </div>
 
               <div className="flex gap-4 pt-4">
@@ -466,113 +630,79 @@ export default function TripsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Trips</h1>
-          <p className="text-gray-600">Manage all travel packages and tours</p>
-        </div>
+    <div className="space-y-6 p-4 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 className="text-2xl md:text-3xl font-bold text-gray-900">Trips Management</h1>
         <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Trip
+          <Plus className="w-4 h-4 mr-2" /> Add Trip
         </Button>
       </div>
-
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search trips..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
+          <Input
+            placeholder="Search trips by title or destination..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
         </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">Image</th>
-                  <th className="text-left p-4">Title</th>
-                  <th className="text-left p-4">Destination</th>
-                  <th className="text-left p-4">Type</th>
-                  <th className="text-left p-4">Duration</th>
-                  <th className="text-left p-4">Price</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Actions</th>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full min-w-[800px]">
+            <thead>
+              <tr className="border-b">
+                <th className="p-3 text-left">Title</th>
+                <th className="p-3 text-left">Destination</th>
+                <th className="p-3 text-left">Price (Adult)</th>
+                <th className="p-3 text-left">Trending</th>
+                <th className="p-3 text-left">Status</th>
+                <th className="p-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr>
+                  <td colSpan={6} className="p-3 text-center">
+                    Loading...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={8} className="p-4 text-center text-gray-500">
-                      Loading trips...
+              )}
+              {!loading && filteredTrips.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-3 text-center">
+                    No trips found.
+                  </td>
+                </tr>
+              )}
+              {!loading &&
+                filteredTrips.map((trip) => (
+                  <tr key={trip._id} className="border-b hover:bg-gray-50">
+                    <td className="p-3 font-medium">{trip.title}</td>
+                    <td className="p-3">{trip.destination}</td>
+                    <td className="p-3">₹{trip.priceAdult.toLocaleString()}</td>
+                    <td className="p-3">{trip.trending ? "Yes" : "No"}</td>
+                    <td className="p-3">
+                      <Badge
+                        variant={
+                          trip.status === "active" ? "default" : trip.status === "draft" ? "outline" : "destructive"
+                        }
+                      >
+                        {trip.status}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(trip)}>
+                          <Edit className="w-3 h-3" />
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDelete(trip._id)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
-                ) : filteredTrips.length === 0 ? (
-                  <tr>
-                    <td colSpan={8} className="p-4 text-center text-gray-500">
-                      No trips found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTrips.map((trip) => (
-                    <tr key={trip._id} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
-                        <Image
-                          src={trip.imageUrl || "/placeholder.svg"}
-                          alt={trip.title}
-                          width={64}
-                          height={64}
-                          className="rounded-md object-cover"
-                        />
-                      </td>
-                      <td className="p-4 font-medium">{trip.title}</td>
-                      <td className="p-4 text-gray-600">{trip.destination}</td>
-                      <td className="p-4 text-gray-600">{trip.tripType}</td>
-                      <td className="p-4 text-gray-600">
-                        {trip.durationDays}D/{trip.durationNights}N
-                      </td>
-                      <td className="p-4 font-semibold">₹{trip.price.toLocaleString()}</td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            trip.status === "active"
-                              ? "bg-green-100 text-green-800"
-                              : trip.status === "draft"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {trip.status}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(trip)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(trip._id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                ))}
+            </tbody>
+          </table>
         </CardContent>
       </Card>
     </div>
