@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
+import { PERMISSIONS } from "@/lib/permissions"
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("")
@@ -53,7 +54,10 @@ export default function AdminLogin() {
         "jmt_admin_user",
         JSON.stringify({
           username: "Trip.jmt",
-          role: "admin",
+          role: "admin", // Or "super_admin" based on your logic
+          // For an 'admin' or 'super_admin', assign all permissions.
+          // For other roles, you'd fetch specific permissions from your backend.
+          permissions: Object.values(PERMISSIONS), // Assumes PERMISSIONS is an object like { VIEW_DASHBOARD: 'view_dashboard', ... }
         }),
       )
 
