@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { PERMISSIONS } from "@/lib/permissions"
+import { PERMISSIONS, ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Ensure this path is correct
 
 export default function AdminLogin() {
   const [username, setUsername] = useState("")
@@ -19,24 +19,17 @@ export default function AdminLogin() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
 
-  // Check if already logged in - ONLY ONCE on mount
   useEffect(() => {
-    const checkExistingAuth = () => {
-      const authCookie = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("jmt_admin_auth="))
-        ?.split("=")[1]
+    const authCookie = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("jmt_admin_auth="))
+      ?.split("=")[1]
 
-      if (authCookie === "true") {
-        // Already logged in, redirect to dashboard
-        router.replace("/admin/dashboard")
-        return
-      }
-
+    if (authCookie === "true") {
+      router.replace("/admin/dashboard")
+    } else {
       setCheckingAuth(false)
     }
-
-    checkExistingAuth()
   }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -44,29 +37,31 @@ export default function AdminLogin() {
     setLoading(true)
     setError("")
 
-    // Simple credential check
     if (username === "Trip.jmt" && password === "QAZqaz#JMT0202") {
-      // Set auth cookie
       document.cookie = "jmt_admin_auth=true; path=/; max-age=86400" // 24 hours
 
-      // Set localStorage as backup
+      const userRole = "admin" // Or "super_admin" based on your actual logic
+
+      // Get permissions based on role, default to all if role not in ROLES_PERMISSIONS or for super_admin
+      let userPermissions: PermissionValue[] = []
+      if (userRole === "super_admin") {
+        userPermissions = Object.values(PERMISSIONS) as PermissionValue[]
+      } else {
+        userPermissions = (ROLES_PERMISSIONS[userRole] || Object.values(PERMISSIONS)) as PermissionValue[]
+      }
+
       localStorage.setItem(
-        "jmt_admin_user",
+        "jmt_admin_user", // Correct key
         JSON.stringify({
           username: "Trip.jmt",
-          role: "admin", // Or "super_admin" based on your logic
-          // For an 'admin' or 'super_admin', assign all permissions.
-          // For other roles, you'd fetch specific permissions from your backend.
-          permissions: Object.values(PERMISSIONS), // Assumes PERMISSIONS is an object like { VIEW_DASHBOARD: 'view_dashboard', ... }
+          role: userRole,
+          permissions: userPermissions,
         }),
       )
-
-      // Single redirect to dashboard
       router.replace("/admin/dashboard")
     } else {
       setError("Invalid credentials")
     }
-
     setLoading(false)
   }
 
@@ -91,7 +86,6 @@ export default function AdminLogin() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded">{error}</div>}
-
             <div>
               <Label htmlFor="username">Username</Label>
               <Input
@@ -103,7 +97,6 @@ export default function AdminLogin() {
                 required
               />
             </div>
-
             <div>
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -127,7 +120,6 @@ export default function AdminLogin() {
                 </Button>
               </div>
             </div>
-
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
@@ -139,7 +131,6 @@ export default function AdminLogin() {
               )}
             </Button>
           </form>
-
           <div className="mt-4 p-3 bg-blue-50 rounded text-sm">
             <p className="font-medium text-blue-900">Test Credentials:</p>
             <p className="text-blue-800">Username: Trip.jmt</p>

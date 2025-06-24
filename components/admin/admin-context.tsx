@@ -1,7 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Assuming PERMISSIONS values are strings
+import { PERMISSIONS, ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Ensure this path is correct
 
 interface AdminUser {
   username: string
@@ -209,23 +209,28 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   ])
 
   useEffect(() => {
-    const adminUserString = localStorage.getItem("jmt_admin_user") // Corrected key
+    const adminUserString = localStorage.getItem("jmt_admin_user") // Correct key
     if (adminUserString) {
       try {
-        const parsedUser = JSON.parse(adminUserString) as AdminUser
-        // Ensure permissions is an array, even if not present in older localStorage data
+        const parsedUser = JSON.parse(adminUserString) as Partial<AdminUser> & { role: string }
+
+        // Ensure permissions array exists and is valid
         if (!parsedUser.permissions || !Array.isArray(parsedUser.permissions)) {
-          // Fallback logic if permissions are missing (e.g., for older stored data)
-          if (parsedUser.role === "admin" || parsedUser.role === "super_admin") {
-            parsedUser.permissions = Object.values(PERMISSIONS)
+          if (parsedUser.role === "super_admin") {
+            parsedUser.permissions = Object.values(PERMISSIONS) as PermissionValue[]
           } else {
-            parsedUser.permissions = []
+            parsedUser.permissions = (ROLES_PERMISSIONS[parsedUser.role] || []) as PermissionValue[]
           }
         }
-        setUser(parsedUser)
+        // Ensure all fields of AdminUser are present
+        setUser({
+          username: parsedUser.username || "Unknown User",
+          role: parsedUser.role,
+          permissions: parsedUser.permissions as PermissionValue[],
+        })
       } catch (e) {
         console.error("Failed to parse admin user from localStorage", e)
-        localStorage.removeItem("jmt_admin_user") // Clear corrupted data
+        localStorage.removeItem("jmt_admin_user")
       }
     }
   }, [])
