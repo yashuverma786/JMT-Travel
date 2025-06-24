@@ -1,107 +1,123 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
 import Image from "next/image"
+import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { ArrowRight } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { MapPin } from "lucide-react"
 
-// Mock data for popular destinations
-const destinations = [
-  {
-    id: 1,
-    name: "Bali",
-    country: "Indonesia",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 45,
-  },
-  {
-    id: 2,
-    name: "Paris",
-    country: "France",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 38,
-  },
-  {
-    id: 3,
-    name: "Santorini",
-    country: "Greece",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 29,
-  },
-  {
-    id: 4,
-    name: "Tokyo",
-    country: "Japan",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 42,
-  },
-  {
-    id: 5,
-    name: "New York",
-    country: "USA",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 51,
-  },
-  {
-    id: 6,
-    name: "Dubai",
-    country: "UAE",
-    image: "/placeholder.svg?height=300&width=400",
-    packages: 33,
-  },
-]
+interface Destination {
+  _id: string
+  name: string
+  country: string
+  description: string
+  imageUrl: string
+  popular: boolean
+  trending: boolean
+}
 
-export default function PopularDestinations() {
-  const [visible, setVisible] = useState<boolean[]>(Array(destinations.length).fill(false))
+export function PopularDestinations() {
+  const [destinations, setDestinations] = useState<Destination[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      destinations.forEach((_, index) => {
-        setTimeout(() => {
-          setVisible((prev) => {
-            const newState = [...prev]
-            newState[index] = true
-            return newState
-          })
-        }, index * 150)
-      })
-    }, 300)
-
-    return () => clearTimeout(timer)
+    fetchDestinations()
   }, [])
 
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-6">
-      {destinations.map((destination, index) => (
-        <Link
-          key={destination.id}
-          href={`/destinations/${destination.id}`}
-          className={`transition-all duration-700 transform ${
-            visible[index] ? "translate-y-0 opacity-100" : "translate-y-10 opacity-0"
-          }`}
-        >
-          <Card className="overflow-hidden transition-all hover:shadow-lg h-full group">
-            <div className="relative h-40 sm:h-48 overflow-hidden">
-              <Image
-                src={destination.image || "/placeholder.svg"}
-                alt={destination.name}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
-              <div className="absolute bottom-0 left-0 p-4 text-white transform group-hover:translate-y-[-8px] transition-transform duration-300">
-                <h3 className="text-lg sm:text-xl font-bold">{destination.name}</h3>
-                <p className="text-xs sm:text-sm opacity-90">{destination.country}</p>
+  const fetchDestinations = async () => {
+    try {
+      const response = await fetch("/api/destinations")
+      if (response.ok) {
+        const data = await response.json()
+        // Filter for popular destinations
+        const popularDestinations = data.destinations.filter((dest: Destination) => dest.popular)
+        setDestinations(popularDestinations.slice(0, 6)) // Show top 6
+      }
+    } catch (error) {
+      console.error("Error fetching destinations:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <section className="py-16 bg-gray-50">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4">Popular Destinations</h2>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              Discover the most loved travel destinations chosen by thousands of travelers
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="bg-gray-300 h-64 rounded-lg mb-4"></div>
+                <div className="bg-gray-300 h-4 rounded mb-2"></div>
+                <div className="bg-gray-300 h-4 rounded w-2/3"></div>
               </div>
-            </div>
-            <CardContent className="p-3 sm:p-4 flex justify-between items-center">
-              <p className="text-sm text-muted-foreground">{destination.packages} holiday packages available</p>
-              <ArrowRight className="h-4 w-4 text-[#f7931e] transform group-hover:translate-x-1 transition-transform opacity-0 group-hover:opacity-100" />
-            </CardContent>
-          </Card>
-        </Link>
-      ))}
-    </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  return (
+    <section className="py-16 bg-gray-50">
+      <div className="container">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Popular Destinations</h2>
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            Discover the most loved travel destinations chosen by thousands of travelers
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {destinations.map((destination) => (
+            <Card key={destination._id} className="group overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="relative h-64 overflow-hidden">
+                <Image
+                  src={destination.imageUrl || "/placeholder.svg?height=300&width=400"}
+                  alt={destination.name}
+                  fill
+                  className="object-cover group-hover:scale-110 transition-transform duration-300"
+                />
+                {destination.trending && (
+                  <Badge className="absolute top-4 left-4 bg-red-500 text-white">Trending</Badge>
+                )}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                <div className="absolute bottom-4 left-4 text-white">
+                  <h3 className="text-xl font-bold mb-1">{destination.name}</h3>
+                  <div className="flex items-center gap-1 text-sm">
+                    <MapPin className="h-4 w-4" />
+                    <span>{destination.country}</span>
+                  </div>
+                </div>
+              </div>
+              <CardContent className="p-4">
+                <p className="text-gray-600 text-sm line-clamp-2 mb-4">
+                  {destination.description || "Explore this amazing destination"}
+                </p>
+                <Link
+                  href={`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`}
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm"
+                >
+                  Explore Packages →
+                </Link>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {destinations.length === 0 && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-500">No popular destinations found.</p>
+          </div>
+        )}
+      </div>
+    </section>
   )
 }

@@ -6,14 +6,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Search, Edit, Trash2, Star } from "lucide-react"
+import { Search, Plus, Edit, Trash2, Star } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Review {
   _id: string
-  tripId: string // Assuming this is a string ID for display, ObjectId in backend
-  userId: string // Assuming this is a string ID for display, ObjectId in backend
+  tripId: string
+  userId: string
+  customerName: string
+  customerEmail: string
   rating: number
   comment: string
   status: "pending" | "approved" | "rejected"
@@ -26,12 +28,14 @@ export default function ReviewsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [showForm, setShowForm] = useState(false)
   const [editingReview, setEditingReview] = useState<Review | null>(null)
-  const [formData, setFormData] = useState<Omit<Review, "_id" | "createdAt" | "updatedAt">>({
+  const [formData, setFormData] = useState({
     tripId: "",
     userId: "",
-    rating: 0,
+    customerName: "",
+    customerEmail: "",
+    rating: 5,
     comment: "",
-    status: "pending",
+    status: "pending" as Review["status"],
   })
   const [loading, setLoading] = useState(false)
 
@@ -57,8 +61,8 @@ export default function ReviewsPage() {
   const filteredReviews = reviews.filter(
     (review) =>
       review.comment.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.tripId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      review.userId.toLowerCase().includes(searchTerm.toLowerCase()),
+      review.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      review.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   const handleEdit = (review: Review) => {
@@ -66,6 +70,8 @@ export default function ReviewsPage() {
     setFormData({
       tripId: review.tripId,
       userId: review.userId,
+      customerName: review.customerName || "",
+      customerEmail: review.customerEmail || "",
       rating: review.rating,
       comment: review.comment,
       status: review.status,
@@ -109,7 +115,7 @@ export default function ReviewsPage() {
       })
 
       if (response.ok) {
-        await fetchReviews() // Re-fetch all reviews to update the list
+        await fetchReviews()
         handleCancel()
       } else {
         const errorData = await response.json()
@@ -129,10 +135,30 @@ export default function ReviewsPage() {
     setFormData({
       tripId: "",
       userId: "",
-      rating: 0,
+      customerName: "",
+      customerEmail: "",
+      rating: 5,
       comment: "",
       status: "pending",
     })
+  }
+
+  const handleStatusChange = async (reviewId: string, newStatus: Review["status"]) => {
+    try {
+      const response = await fetch(`/api/admin/reviews/${reviewId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ status: newStatus }),
+      })
+
+      if (response.ok) {
+        setReviews(reviews.map((review) => (review._id === reviewId ? { ...review, status: newStatus } : review)))
+      }
+    } catch (error) {
+      console.error("Error updating review status:", error)
+    }
   }
 
   if (showForm) {
@@ -154,37 +180,57 @@ export default function ReviewsPage() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-6">
-              <div>
-                <Label htmlFor="tripId">Trip ID</Label>
-                <Input
-                  id="tripId"
-                  value={formData.tripId}
-                  onChange={(e) => setFormData({ ...formData, tripId: e.target.value })}
-                  placeholder="Enter Trip ID"
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="customerName">Customer Name</Label>
+                  <Input
+                    id="customerName"
+                    value={formData.customerName}
+                    onChange={(e) => setFormData({ ...formData, customerName: e.target.value })}
+                    placeholder="Enter customer name"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="customerEmail">Customer Email</Label>
+                  <Input
+                    id="customerEmail"
+                    type="email"
+                    value={formData.customerEmail}
+                    onChange={(e) => setFormData({ ...formData, customerEmail: e.target.value })}
+                    placeholder="Enter customer email"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="userId">User ID</Label>
-                <Input
-                  id="userId"
-                  value={formData.userId}
-                  onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                  placeholder="Enter User ID"
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="rating">Rating (1-5)</Label>
-                <Input
-                  id="rating"
-                  type="number"
-                  min="1"
-                  max="5"
-                  value={formData.rating}
-                  onChange={(e) => setFormData({ ...formData, rating: Number(e.target.value) })}
-                  required
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="tripId">Trip ID</Label>
+                  <Input
+                    id="tripId"
+                    value={formData.tripId}
+                    onChange={(e) => setFormData({ ...formData, tripId: e.target.value })}
+                    placeholder="Enter Trip ID"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="rating">Rating (1-5)</Label>
+                  <Select
+                    value={formData.rating.toString()}
+                    onValueChange={(value) => setFormData({ ...formData, rating: Number(value) })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <SelectItem key={num} value={num.toString()}>
+                          {num} Star{num > 1 ? "s" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div>
                 <Label htmlFor="comment">Comment</Label>
@@ -201,12 +247,10 @@ export default function ReviewsPage() {
                 <Label htmlFor="status">Status</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value: "pending" | "approved" | "rejected") =>
-                    setFormData({ ...formData, status: value })
-                  }
+                  onValueChange={(value: Review["status"]) => setFormData({ ...formData, status: value })}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select status" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="pending">Pending</SelectItem>
@@ -238,7 +282,10 @@ export default function ReviewsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Reviews</h1>
           <p className="text-gray-600">Manage customer reviews and ratings</p>
         </div>
-        {/* No "Add Review" button as reviews are typically submitted from frontend */}
+        <Button onClick={() => setShowForm(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add Review
+        </Button>
       </div>
 
       <Card>
@@ -260,8 +307,7 @@ export default function ReviewsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left p-4">Trip ID</th>
-                  <th className="text-left p-4">User ID</th>
+                  <th className="text-left p-4">Customer</th>
                   <th className="text-left p-4">Rating</th>
                   <th className="text-left p-4">Comment</th>
                   <th className="text-left p-4">Status</th>
@@ -271,37 +317,47 @@ export default function ReviewsPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={5} className="p-4 text-center text-gray-500">
                       Loading reviews...
                     </td>
                   </tr>
                 ) : filteredReviews.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={5} className="p-4 text-center text-gray-500">
                       No reviews found.
                     </td>
                   </tr>
                 ) : (
                   filteredReviews.map((review) => (
                     <tr key={review._id} className="border-b hover:bg-gray-50">
-                      <td className="p-4 font-medium">{review.tripId}</td>
-                      <td className="p-4 text-gray-600">{review.userId}</td>
-                      <td className="p-4 flex items-center gap-1">
-                        {review.rating} <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      </td>
-                      <td className="p-4 text-gray-600">{review.comment.substring(0, 70)}...</td>
                       <td className="p-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            review.status === "approved"
-                              ? "bg-green-100 text-green-800"
-                              : review.status === "pending"
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
-                          }`}
+                        <div>
+                          <div className="font-medium">{review.customerName || "Anonymous"}</div>
+                          <div className="text-sm text-gray-500">{review.customerEmail}</div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <div className="flex items-center gap-1">
+                          {review.rating} <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        </div>
+                      </td>
+                      <td className="p-4 text-gray-600 max-w-xs">
+                        <div className="truncate">{review.comment}</div>
+                      </td>
+                      <td className="p-4">
+                        <Select
+                          value={review.status}
+                          onValueChange={(value: Review["status"]) => handleStatusChange(review._id, value)}
                         >
-                          {review.status}
-                        </span>
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">Pending</SelectItem>
+                            <SelectItem value="approved">Approved</SelectItem>
+                            <SelectItem value="rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </td>
                       <td className="p-4">
                         <div className="flex gap-2">

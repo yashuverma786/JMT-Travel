@@ -12,9 +12,10 @@ export default function AdminDashboardLayout({
 }) {
   return (
     <AdminProvider>
-      <div className="flex min-h-screen bg-gray-100">
+      <div className="min-h-screen bg-gray-100">
         <AdminSidebar />
-        <div className="flex-1 flex flex-col">
+        {/* Main content with proper margin for desktop sidebar */}
+        <div className="md:ml-64 flex flex-col min-h-screen">
           <AdminNavbar />
           <main className="flex-1 p-4 md:p-6 overflow-y-auto">{children}</main>
         </div>

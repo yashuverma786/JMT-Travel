@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
 
-// GET all reviews
 export async function GET(request: NextRequest) {
   try {
     const { db } = await connectToDatabase()
-    const reviews = await db.collection("reviews").find({}).toArray()
+    const reviews = await db.collection("reviews").find({}).sort({ createdAt: -1 }).toArray()
     return NextResponse.json({ reviews })
   } catch (error) {
     console.error("Error fetching reviews:", error)
@@ -14,31 +12,34 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST a new review
 export async function POST(request: NextRequest) {
   try {
     const reviewData = await request.json()
-    const { tripId, userId, rating, comment, status } = reviewData
+    const { customerName, customerEmail, rating, comment, tripId, status } = reviewData
 
-    if (!tripId || !userId || !rating || !comment) {
+    if (!customerName || !rating || !comment) {
       return NextResponse.json({ message: "Missing required review fields" }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
-    const result = await db.collection("reviews").insertOne({
-      tripId: new ObjectId(tripId), // Assuming tripId is an ObjectId
-      userId: new ObjectId(userId), // Assuming userId is an ObjectId
+    const newReview = {
+      tripId: tripId || "general",
+      userId: "admin-created",
+      customerName,
+      customerEmail: customerEmail || "",
       rating: Number(rating),
       comment,
-      status: status || "pending", // pending, approved, rejected
+      status: status || "pending",
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+    }
+
+    const result = await db.collection("reviews").insertOne(newReview)
 
     return NextResponse.json(
       {
         message: "Review created successfully",
-        review: { _id: result.insertedId, ...reviewData },
+        review: { _id: result.insertedId, ...newReview },
       },
       { status: 201 },
     )

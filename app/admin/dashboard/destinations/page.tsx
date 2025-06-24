@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
+import { FileUpload } from "@/components/ui/file-upload"
 
 interface Destination {
   _id: string
@@ -109,7 +110,7 @@ export default function DestinationsPage() {
       })
 
       if (response.ok) {
-        await fetchDestinations() // Re-fetch all destinations to update the list
+        await fetchDestinations()
         handleCancel()
       } else {
         const errorData = await response.json()
@@ -186,15 +187,15 @@ export default function DestinationsPage() {
                   placeholder="A brief description of the destination"
                 />
               </div>
-              <div>
-                <Label htmlFor="imageUrl">Image URL</Label>
-                <Input
-                  id="imageUrl"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
+
+              {/* Replace Image URL with File Upload */}
+              <FileUpload
+                label="Destination Image"
+                value={formData.imageUrl}
+                onChange={(url) => setFormData({ ...formData, imageUrl: url as string })}
+                multiple={false}
+              />
+
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="popular"
