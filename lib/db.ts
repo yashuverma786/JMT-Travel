@@ -1,27 +1,19 @@
-import { MongoClient, type Db } from "mongodb"
+import { MongoClient } from "mongodb"
 
-/**
- * Lightweight singleton wrapper so
- *  `import { db } from "@/lib/db"`
- * works everywhere without reconnecting.
- */
-let cached: { client: MongoClient; db: Db } | null = null
-
-async function connect(): Promise<Db> {
-  if (cached) return cached.db
-
-  const uri = process.env.MONGODB_URI
-  if (!uri) throw new Error("Missing MONGODB_URI env variable")
-
-  const client = new MongoClient(uri)
-  await client.connect()
-
-  cached = { client, db: client.db() }
-  return cached.db
+if (!process.env.MONGODB_URI) {
+  throw new Error("MONGODB_URI environment variable is not set")
 }
 
-/**
- * The codebase expects a _named_ export called **db**
- * (it can be awaited: `const database = await db`)
- */
-export const db = connect()
+const uri = process.env.MONGODB_URI
+
+// Global caching in dev - avoids creating multiple clients
+let client: MongoClient | null = null
+
+export async function getDb() {
+  if (!client) {
+    client = new MongoClient(uri as string)
+    await client.connect()
+  }
+  // 👇 change the DB name if you use something else
+  return client.db("jmt_travel")
+}

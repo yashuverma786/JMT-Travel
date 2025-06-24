@@ -1,8 +1,8 @@
 import { ROLES_PERMISSIONS } from "@/lib/permissions"
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/db"
+import { getDb } from "@/lib/db"
 import { ObjectId } from "mongodb"
-import bcrypt from "bcrypt"
+import bcrypt from "bcryptjs"
 
 export async function GET(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -12,6 +12,7 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ message: "Invalid ID" }, { status: 400 })
     }
 
+    const db = await getDb()
     const user = await db.collection("admin_users").findOne({ _id: new ObjectId(id) })
 
     if (!user) {
@@ -55,6 +56,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       delete updatePayload.permissions // Or handle explicit permission changes carefully
     }
 
+    const db = await getDb()
     const result = await db.collection("admin_users").updateOne({ _id: new ObjectId(id) }, { $set: updatePayload })
 
     if (result.modifiedCount === 0) {
@@ -76,6 +78,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       return NextResponse.json({ message: "Invalid ID" }, { status: 400 })
     }
 
+    const db = await getDb()
     const result = await db.collection("admin_users").deleteOne({ _id: new ObjectId(id) })
 
     if (result.deletedCount === 0) {
