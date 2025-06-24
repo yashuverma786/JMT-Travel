@@ -10,7 +10,7 @@ import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileUpload } from "@/components/ui/file-upload"
+import { FileUpload } from "@/components/ui/file-upload" // Import FileUpload
 
 interface Blog {
   _id: string
@@ -18,7 +18,7 @@ interface Blog {
   author: string
   content: string
   category: string
-  imageUrl: string
+  imageUrl: string // This will now be populated by FileUpload
   tags: string[]
   status: "draft" | "published"
   createdAt: string
@@ -117,7 +117,7 @@ export default function BlogsPage() {
       })
 
       if (response.ok) {
-        await fetchBlogs() // Re-fetch all blogs to update the list
+        await fetchBlogs()
         handleCancel()
       } else {
         const errorData = await response.json()
@@ -224,17 +224,17 @@ export default function BlogsPage() {
                   <FileUpload
                     value={formData.imageUrl}
                     onChange={(url) => setFormData({ ...formData, imageUrl: url as string })}
-                    multiple={false}
+                    multiple={false} // Typically one image for a blog post header
                     label="Upload blog image"
                   />
                   {formData.imageUrl && (
                     <div className="mt-2">
                       <Image
                         src={formData.imageUrl || "/placeholder.svg"}
-                        alt="Blog image"
+                        alt="Blog image preview"
                         width={100}
                         height={100}
-                        className="object-cover rounded"
+                        className="rounded object-cover"
                       />
                     </div>
                   )}

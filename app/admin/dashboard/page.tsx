@@ -1,20 +1,14 @@
 "use client"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-  Users,
-  MapPin,
-  Plane,
-  Activity,
-  Hotel,
-  Car,
-  FileText,
-  MessageSquare,
-  UserCheck,
-  Mail,
-  Settings,
-} from "lucide-react"
+
 import Link from "next/link"
+
+import { CardDescription } from "@/components/ui/card"
+
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAdmin } from "@/components/admin/admin-context"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Users, MapPin, Plane, Star, Newspaper, HotelIcon } from "lucide-react"
 
 const managementCards = [
   {
@@ -34,42 +28,42 @@ const managementCards = [
   {
     title: "Trip Types",
     description: "Manage trip categories",
-    icon: Activity,
+    icon: Plane,
     href: "/admin/dashboard/trip-types",
     color: "text-purple-600",
   },
   {
     title: "Activities",
     description: "Manage activities",
-    icon: Activity,
+    icon: Plane,
     href: "/admin/dashboard/activities",
     color: "text-orange-600",
   },
   {
     title: "Hotels",
     description: "Manage hotel listings",
-    icon: Hotel,
+    icon: HotelIcon,
     href: "/admin/dashboard/hotels",
     color: "text-red-600",
   },
   {
     title: "Car Rentals",
     description: "Manage vehicle rentals",
-    icon: Car,
+    icon: Plane,
     href: "/admin/dashboard/rentals",
     color: "text-indigo-600",
   },
   {
     title: "Blogs",
     description: "Manage blog posts",
-    icon: FileText,
+    icon: Newspaper,
     href: "/admin/dashboard/blogs",
     color: "text-teal-600",
   },
   {
     title: "Reviews",
     description: "Manage customer reviews",
-    icon: MessageSquare,
+    icon: Star,
     href: "/admin/dashboard/reviews",
     color: "text-pink-600",
   },
@@ -83,32 +77,68 @@ const managementCards = [
   {
     title: "Collaborators",
     description: "Manage partners & vendors",
-    icon: UserCheck,
+    icon: Plane,
     href: "/admin/dashboard/collaborators",
     color: "text-yellow-600",
   },
   {
     title: "Leads",
     description: "Manage customer inquiries",
-    icon: Mail,
+    icon: Plane,
     href: "/admin/dashboard/leads",
     color: "text-cyan-600",
   },
   {
     title: "Custom Requests",
     description: "Manage tour requests",
-    icon: Settings,
+    icon: Plane,
     href: "/admin/dashboard/custom-requests",
     color: "text-emerald-600",
   },
 ]
 
-export default function AdminDashboard() {
+export default function AdminDashboardPage() {
+  const { user } = useAdmin()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (user && user.role === "hotel_lister" && !user.permissions.includes("manage_own_hotels")) {
+      // If hotel_lister somehow lands here without the specific permission,
+      // redirect to a more appropriate page or show a restricted message.
+      // This is a fallback, primary redirection should happen in layout or a wrapper.
+      // For now, we assume they have MANAGE_OWN_HOTELS and will see the Hotels tab.
+      // A dedicated /admin/dashboard/my-hotels page would be better.
+    } else if (user && user.role === "hotel_lister") {
+      // If they are a hotel lister, they should ideally be redirected to their specific hotel management page
+      // For now, they will see the main dashboard but sidebar links will be restricted.
+      // Consider redirecting to /admin/dashboard/hotels if that's their primary view.
+      // router.replace("/admin/dashboard/hotels"); // Example redirect
+    }
+  }, [user, router])
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <p>Loading user data...</p>
+      </div>
+    )
+  }
+
+  // Example stats - replace with actual data fetching
+  const stats = [
+    { title: "Total Users", value: "1,234", icon: Users, color: "text-blue-500" },
+    { title: "Destinations", value: "56", icon: MapPin, color: "text-green-500" },
+    { title: "Trips", value: "120", icon: Plane, color: "text-purple-500" },
+    { title: "Hotels", value: "78", icon: HotelIcon, color: "text-orange-500" },
+    { title: "Reviews", value: "500+", icon: Star, color: "text-yellow-500" },
+    { title: "Blog Posts", value: "30", icon: Newspaper, color: "text-indigo-500" },
+  ]
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
-        <p className="text-gray-600 mt-2">Manage your travel platform</p>
+        <h1 className="text-3xl font-bold text-gray-800">Admin Dashboard</h1>
+        <p className="text-gray-600 mt-2">Welcome back, {user.username}! Here's an overview of your site.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -125,7 +155,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <Link href={card.href}>
-                  <Button className="w-full">Manage</Button>
+                  <button className="w-full">Manage</button>
                 </Link>
               </CardContent>
             </Card>
@@ -133,29 +163,29 @@ export default function AdminDashboard() {
         })}
       </div>
 
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {stats.map((stat) => (
+          <Card key={stat.title}>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+              <stat.icon className={`h-5 w-5 ${stat.color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              {/* <p className="text-xs text-muted-foreground">+20.1% from last month</p> */}
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Add more sections like recent activity, charts, etc. */}
       <Card>
         <CardHeader>
-          <CardTitle>Quick Stats</CardTitle>
+          <CardTitle>Recent Activity (Placeholder)</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">0</div>
-              <div className="text-sm text-gray-600">Total Trips</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">0</div>
-              <div className="text-sm text-gray-600">Active Users</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">0</div>
-              <div className="text-sm text-gray-600">Bookings</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">0</div>
-              <div className="text-sm text-gray-600">Reviews</div>
-            </div>
-          </div>
+          <p className="text-muted-foreground">No recent activity to display yet.</p>
+          {/* Example: <BarChart className="w-full h-64" /> */}
         </CardContent>
       </Card>
     </div>

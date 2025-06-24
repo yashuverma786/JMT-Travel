@@ -24,21 +24,22 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const updateData = await request.json()
     const { db } = await connectToDatabase()
 
-    // Ensure arrays are handled correctly
-    updateData.imageUrls = updateData.imageUrls || []
-    updateData.itinerary = updateData.itinerary || []
-    updateData.faqs = updateData.faqs || []
-    updateData.inclusions = updateData.inclusions || []
-    updateData.exclusions = updateData.exclusions || []
-
-    if (updateData.price) {
-      updateData.price = Number.parseFloat(updateData.price)
+    // Ensure numeric fields are numbers
+    if (updateData.normalPrice) {
+      updateData.normalPrice = Number.parseFloat(updateData.normalPrice)
     }
     if (updateData.salePrice) {
       updateData.salePrice = Number.parseFloat(updateData.salePrice)
     } else if (updateData.hasOwnProperty("salePrice") && !updateData.salePrice) {
       updateData.salePrice = null // Allow clearing sale price
     }
+
+    // Ensure arrays are handled correctly
+    updateData.imageUrls = updateData.imageUrls || []
+    updateData.itinerary = updateData.itinerary || []
+    updateData.faqs = updateData.faqs || []
+    updateData.inclusions = updateData.inclusions || []
+    updateData.exclusions = updateData.exclusions || []
 
     const result = await db
       .collection("trips")

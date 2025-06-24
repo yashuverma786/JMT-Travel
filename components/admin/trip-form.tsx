@@ -1,6 +1,6 @@
 "use client"
 
-import { Select } from "@/components/ui/select"
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select"
 
 import type React from "react"
 
@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Plus, Minus, ArrowLeft } from "lucide-react"
 import { FileUpload } from "@/components/ui/file-upload" // Assuming FileUpload is for images
@@ -30,11 +29,10 @@ interface Destination {
 export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
   const [formData, setFormData] = useState({
     title: trip?.title || "",
-    // image: trip?.image || "", // This will be handled by FileUpload
     imageUrls: trip?.imageUrls || [], // Assuming you want to support multiple images
-    price: trip?.price || "", // Changed from adultPrice
-    salePrice: trip?.salePrice || "", // New field
-    destination: trip?.destination || "", // Will store destination ID or name
+    normalPrice: trip?.normalPrice || "", // Renamed from price/adultPrice
+    salePrice: trip?.salePrice || "", // New field for sale price
+    destinationId: trip?.destinationId || "", // Will store destination ID
     overview: trip?.overview || "",
     itinerary: trip?.itinerary || [{ day: 1, title: "", description: "" }],
     includes: trip?.includes || [],
@@ -53,23 +51,23 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
 
   const [includesInput, setIncludesInput] = useState("")
   const [excludesInput, setExcludesInput] = useState("")
-  const [destinations, setDestinations] = useState<Destination[]>([])
+  const [availableDestinations, setAvailableDestinations] = useState<Destination[]>([])
 
   useEffect(() => {
-    const fetchDestinationsForForm = async () => {
+    const fetchDestinations = async () => {
       try {
-        const response = await fetch("/api/admin/destinations")
+        const response = await fetch("/api/admin/destinations") // Ensure this API returns all destinations
         if (response.ok) {
           const data = await response.json()
-          setDestinations(data.destinations || [])
+          setAvailableDestinations(data.destinations || [])
         } else {
-          console.error("Failed to fetch destinations for form")
+          console.error("Failed to fetch destinations for trip form")
         }
       } catch (error) {
-        console.error("Error fetching destinations for form:", error)
+        console.error("Error fetching destinations:", error)
       }
     }
-    fetchDestinationsForForm()
+    fetchDestinations()
   }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -194,8 +192,8 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                   <FileUpload
                     value={formData.imageUrls}
                     onChange={(urls) => setFormData({ ...formData, imageUrls: urls as string[] })}
-                    multiple={true} // Allow multiple images for a trip
-                    label="Upload trip images"
+                    multiple={true}
+                    label="Upload trip images (first image is primary)"
                   />
                   {formData.imageUrls.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -211,16 +209,17 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="price">Normal Price (₹)</Label>
+                    <Label htmlFor="normalPrice">Normal Price (₹)</Label>
                     <Input
-                      id="price"
+                      id="normalPrice"
                       type="number"
-                      value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="Normal price"
+                      value={formData.normalPrice}
+                      onChange={(e) => setFormData({ ...formData, normalPrice: e.target.value })}
+                      placeholder="e.g., 10000"
                       required
+                      min="0"
                     />
                   </div>
                   <div>
@@ -230,23 +229,29 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       type="number"
                       value={formData.salePrice}
                       onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                      placeholder="Sale price (if any)"
+                      placeholder="e.g., 8000 (if on sale)"
+                      min="0"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="destination">Destination</Label>
+                  <Label htmlFor="destinationId">Destination</Label>
                   <Select
-                    value={formData.destination}
-                    onValueChange={(value) => setFormData({ ...formData, destination: value })}
+                    value={formData.destinationId}
+                    onValueChange={(value) => setFormData({ ...formData, destinationId: value })}
                     required
                   >
-                    <SelectTrigger id="destination">
+                    <SelectTrigger id="destinationId">
                       <SelectValue placeholder="Select destination" />
                     </SelectTrigger>
                     <SelectContent>
-                      {destinations.map((dest) => (
+                      {availableDestinations.length === 0 && (
+                        <SelectItem value="" disabled>
+                          Loading destinations...
+                        </SelectItem>
+                      )}
+                      {availableDestinations.map((dest) => (
                         <SelectItem key={dest._id} value={dest._id}>
                           {dest.name} ({dest.country})
                         </SelectItem>
@@ -276,8 +281,7 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                 <div className="flex justify-between items-center">
                   <CardTitle>Itinerary</CardTitle>
                   <Button type="button" onClick={addItineraryDay} variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Day
+                    <Plus className="w-4 h-4 mr-2" /> Add Day
                   </Button>
                 </div>
               </CardHeader>
@@ -341,7 +345,6 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                   </div>
                 </CardContent>
               </Card>
-
               <Card>
                 <CardHeader>
                   <CardTitle className="text-red-600">Excludes</CardTitle>
@@ -398,7 +401,6 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label htmlFor="language">Language</Label>
                     <Select
@@ -415,7 +417,6 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label htmlFor="groupSize">Group Size</Label>
                     <Select
@@ -433,7 +434,6 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       </SelectContent>
                     </Select>
                   </div>
-
                   <div>
                     <Label htmlFor="difficulty">Difficulty Level</Label>
                     <Select
@@ -452,7 +452,6 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                     </Select>
                   </div>
                 </div>
-
                 <div>
                   <Label htmlFor="mapUrl">Google Map URL</Label>
                   <Input
@@ -472,8 +471,7 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                 <div className="flex justify-between items-center">
                   <CardTitle>Frequently Asked Questions</CardTitle>
                   <Button type="button" onClick={addFAQ} variant="outline">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add FAQ
+                    <Plus className="w-4 h-4 mr-2" /> Add FAQ
                   </Button>
                 </div>
               </CardHeader>

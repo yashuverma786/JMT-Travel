@@ -1,16 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
-// You'll need a way to verify if the current user is a super_admin
-// This might involve decoding a JWT or checking session data
-// For now, this is a placeholder for that logic
-// import { verifyAdminPermissions } from "@/lib/auth"; // Placeholder
+// import { getCurrentUserAndPermissions } from "@/lib/auth-utils"; // You'd need a utility for this
+// import { PERMISSIONS } from "@/lib/permissions";
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // const hasPermission = await verifyAdminPermissions(request, ["super_admin"]); // Placeholder
-    // if (!hasPermission) {
-    //   return NextResponse.json({ message: "Unauthorized" }, { status: 403 });
+    // const { user, error: authError } = await getCurrentUserAndPermissions(request);
+    // if (authError || !user || !user.permissions.includes(PERMISSIONS.APPROVE_LISTINGS)) {
+    //   return NextResponse.json({ message: authError || "Unauthorized" }, { status: 403 });
     // }
 
     const { id } = params
@@ -20,7 +18,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const { status } = await request.json()
     if (!status || !["approved", "rejected"].includes(status)) {
-      return NextResponse.json({ message: "Invalid status provided" }, { status: 400 })
+      return NextResponse.json(
+        { message: "Invalid status provided. Must be 'approved' or 'rejected'." },
+        { status: 400 },
+      )
     }
 
     const { db } = await connectToDatabase()
@@ -30,6 +31,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     if (result.matchedCount === 0) {
       return NextResponse.json({ message: "Hotel not found" }, { status: 404 })
+    }
+    if (result.modifiedCount === 0 && result.matchedCount === 1) {
+      return NextResponse.json({ message: `Hotel status is already ${status}` })
     }
 
     return NextResponse.json({ message: `Hotel status updated to ${status}` })

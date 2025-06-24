@@ -15,11 +15,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const tripData = await request.json()
-    // Validate required fields
-    const { title, destination, tripType, durationDays, price, salePrice } = tripData
-    if (!title || !destination || !tripType || durationDays == null || price == null) {
+    const { title, destinationId, tripType, durationDays, normalPrice, salePrice } = tripData // Added normalPrice, salePrice, changed destination to destinationId
+    if (!title || !destinationId || !tripType || durationDays == null || normalPrice == null) {
       return NextResponse.json(
-        { message: "Missing required fields: title, destination, tripType, durationDays, price." },
+        { message: "Missing required fields: title, destinationId, tripType, durationDays, normalPrice." },
         { status: 400 },
       )
     }
@@ -27,8 +26,9 @@ export async function POST(request: NextRequest) {
     const { db } = await connectToDatabase()
     const newTrip = {
       ...tripData,
-      price: Number.parseFloat(price), // Ensure price is a number
-      salePrice: salePrice ? Number.parseFloat(salePrice) : null, // Ensure salePrice is a number or null
+      normalPrice: Number.parseFloat(normalPrice),
+      salePrice: salePrice ? Number.parseFloat(salePrice) : null,
+      destinationId, // Ensure this is stored
       imageUrls: tripData.imageUrls || [],
       itinerary: tripData.itinerary || [],
       faqs: tripData.faqs || [],
