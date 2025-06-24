@@ -1,8 +1,7 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,28 +15,66 @@ export default function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [checkingAuth, setCheckingAuth] = useState(true)
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check if already logged in - ONLY ONCE on mount
+  useEffect(() => {
+    const checkExistingAuth = () => {
+      const authCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("jmt_admin_auth="))
+        ?.split("=")[1]
+
+      if (authCookie === "true") {
+        // Already logged in, redirect to dashboard
+        router.replace("/admin/dashboard")
+        return
+      }
+
+      setCheckingAuth(false)
+    }
+
+    checkExistingAuth()
+  }, [router])
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setError("")
 
-    // Direct credential check - no API calls, no loops
+    // Simple credential check
     if (username === "Trip.jmt" && password === "QAZqaz#JMT0202") {
-      // Clear any existing auth data first
-      localStorage.clear()
+      // Set auth cookie
+      document.cookie = "jmt_admin_auth=true; path=/; max-age=86400" // 24 hours
 
-      // Set simple auth flag
-      localStorage.setItem("jmt_admin_logged_in", "true")
-      localStorage.setItem("jmt_admin_user", "Trip.jmt")
+      // Set localStorage as backup
+      localStorage.setItem(
+        "jmt_admin_user",
+        JSON.stringify({
+          username: "Trip.jmt",
+          role: "admin",
+        }),
+      )
 
-      // Direct navigation
-      window.location.href = "/admin/dashboard"
+      // Single redirect to dashboard
+      router.replace("/admin/dashboard")
     } else {
       setError("Invalid credentials")
-      setLoading(false)
     }
+
+    setLoading(false)
+  }
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -100,7 +137,7 @@ export default function AdminLogin() {
           </form>
 
           <div className="mt-4 p-3 bg-blue-50 rounded text-sm">
-            <p className="font-medium text-blue-900">Credentials:</p>
+            <p className="font-medium text-blue-900">Test Credentials:</p>
             <p className="text-blue-800">Username: Trip.jmt</p>
             <p className="text-blue-800">Password: QAZqaz#JMT0202</p>
           </div>

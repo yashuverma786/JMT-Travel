@@ -1,58 +1,67 @@
 "use client"
 
 import type React from "react"
-
 import { useEffect, useState } from "react"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 
 export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null)
   const pathname = usePathname()
+  const router = useRouter()
 
   useEffect(() => {
-    // For login page, no auth check needed
+    // Skip auth check for login page completely
     if (pathname === "/admin") {
-      setLoading(false)
+      setIsAuthenticated(null) // No auth needed for login page
       return
     }
 
-    // Simple auth check for dashboard pages
-    const isLoggedIn = localStorage.getItem("jmt_admin_logged_in")
-    if (isLoggedIn === "true") {
-      setIsAuthenticated(true)
-    } else {
-      // Redirect to login if not authenticated
-      window.location.href = "/admin"
-      return
+    // Only check auth for dashboard routes
+    if (pathname.startsWith("/admin/dashboard")) {
+      const checkAuth = () => {
+        const authCookie = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("jmt_admin_auth="))
+          ?.split("=")[1]
+
+        if (authCookie === "true") {
+          setIsAuthenticated(true)
+        } else {
+          setIsAuthenticated(false)
+          router.replace("/admin")
+        }
+      }
+
+      checkAuth()
     }
+  }, [pathname, router])
 
-    setLoading(false)
-  }, [pathname])
-
-  // Show loading only briefly
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    )
-  }
-
-  // Show login page
+  // Login page - no auth check needed
   if (pathname === "/admin") {
     return children
   }
 
-  // Show dashboard only if authenticated
-  if (isAuthenticated) {
+  // Dashboard routes - check auth
+  if (pathname.startsWith("/admin/dashboard")) {
+    if (isAuthenticated === null) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      )
+    }
+
+    if (isAuthenticated === false) {
+      return null // Will redirect to login
+    }
+
     return children
   }
 
-  // Fallback
-  return null
+  // Other admin routes
+  return children
 }
