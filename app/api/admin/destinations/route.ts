@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const destinationData = await request.json()
-    const { name, country, description, imageUrl, popular, trending } = destinationData
+    const { name, country, description, imageUrl, popular, trending, type } = destinationData
 
-    if (!name || !country) {
-      return NextResponse.json({ message: "Name and country are required" }, { status: 400 })
+    if (!name || !country || !type) {
+      return NextResponse.json({ message: "Name, country, and type are required" }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
       imageUrl: imageUrl || "/placeholder.svg",
       popular: popular || false,
       trending: trending || false,
+      type,
       createdAt: new Date(),
       updatedAt: new Date(),
     })

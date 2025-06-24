@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { FileUpload } from "@/components/ui/file-upload"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface Destination {
   _id: string
@@ -19,6 +20,7 @@ interface Destination {
   imageUrl: string
   popular: boolean
   trending: boolean
+  type: "national" | "international" | "" // Added type
 }
 
 export default function DestinationsPage() {
@@ -33,6 +35,7 @@ export default function DestinationsPage() {
     imageUrl: "",
     popular: false,
     trending: false,
+    type: "" as "national" | "international" | "", // Added type
   })
   const [loading, setLoading] = useState(false)
 
@@ -70,6 +73,7 @@ export default function DestinationsPage() {
       imageUrl: destination.imageUrl,
       popular: destination.popular,
       trending: destination.trending,
+      type: destination.type || "",
     })
     setShowForm(true)
   }
@@ -134,6 +138,7 @@ export default function DestinationsPage() {
       imageUrl: "",
       popular: false,
       trending: false,
+      type: "" as "national" | "international" | "",
     })
   }
 
@@ -195,6 +200,23 @@ export default function DestinationsPage() {
                 onChange={(url) => setFormData({ ...formData, imageUrl: url as string })}
                 multiple={false}
               />
+
+              <div>
+                <Label htmlFor="destinationType">Destination Type</Label>
+                <Select
+                  value={formData.type}
+                  onValueChange={(value: "national" | "international") => setFormData({ ...formData, type: value })}
+                  required
+                >
+                  <SelectTrigger id="destinationType">
+                    <SelectValue placeholder="Select type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="national">National</SelectItem>
+                    <SelectItem value="international">International</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               <div className="flex items-center space-x-2">
                 <Checkbox
@@ -263,6 +285,7 @@ export default function DestinationsPage() {
                   <th className="text-left p-4">Image</th>
                   <th className="text-left p-4">Name</th>
                   <th className="text-left p-4">Country</th>
+                  <th className="text-left p-4">Type</th>
                   <th className="text-left p-4">Popular</th>
                   <th className="text-left p-4">Trending</th>
                   <th className="text-left p-4">Actions</th>
@@ -271,13 +294,13 @@ export default function DestinationsPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={7} className="p-4 text-center text-gray-500">
                       Loading destinations...
                     </td>
                   </tr>
                 ) : filteredDestinations.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="p-4 text-center text-gray-500">
+                    <td colSpan={7} className="p-4 text-center text-gray-500">
                       No destinations found.
                     </td>
                   </tr>
@@ -295,6 +318,7 @@ export default function DestinationsPage() {
                       </td>
                       <td className="p-4 font-medium">{destination.name}</td>
                       <td className="p-4 text-gray-600">{destination.country}</td>
+                      <td className="p-4 text-gray-600 capitalize">{destination.type || "N/A"}</td>
                       <td className="p-4">
                         {destination.popular ? (
                           <span className="text-green-500">Yes</span>

@@ -29,12 +29,22 @@ export const ROLES_PERMISSIONS: Record<string, PermissionValue[]> = {
     PERMISSIONS.MANAGE_BLOGS,
     PERMISSIONS.APPROVE_LISTINGS,
     PERMISSIONS.VIEW_ANALYTICS,
+    PERMISSIONS.MANAGE_USERS, // Ensure admin can manage users if not already present
   ],
   content_manager: [
     PERMISSIONS.MANAGE_BLOGS,
     PERMISSIONS.MANAGE_REVIEWS,
-    // Can be given specific content update permissions for trips/destinations if needed
+    PERMISSIONS.MANAGE_TRIPS, // Content managers might need to edit trip content
+    PERMISSIONS.MANAGE_DESTINATIONS, // And destination content
+    // Removed: PERMISSIONS.MANAGE_HOTELS, PERMISSIONS.MANAGE_RENTALS
   ],
   hotel_owner: [], // Permissions to submit/manage their own hotel listings (handled via specific API routes)
   rental_vendor: [], // Permissions to submit/manage their own rental listings
+  hotel_lister: [
+    // This role will be very restricted, perhaps a custom permission like "manage_own_hotels"
+    // For now, let's assume they can access a specific part of hotels.
+    // This needs a more detailed setup for their specific dashboard.
+    // We'll use MANAGE_HOTELS for now and filter by owner later.
+    PERMISSIONS.MANAGE_HOTELS,
+  ],
 }

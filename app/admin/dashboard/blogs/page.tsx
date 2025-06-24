@@ -10,6 +10,7 @@ import { Search, Plus, Edit, Trash2 } from "lucide-react"
 import Image from "next/image"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { FileUpload } from "@/components/ui/file-upload"
 
 interface Blog {
   _id: string
@@ -219,13 +220,24 @@ export default function BlogsPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="imageUrl">Image URL</Label>
-                  <Input
-                    id="imageUrl"
+                  <Label>Blog Post Image</Label>
+                  <FileUpload
                     value={formData.imageUrl}
-                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                    placeholder="https://example.com/blog-image.jpg"
+                    onChange={(url) => setFormData({ ...formData, imageUrl: url as string })}
+                    multiple={false}
+                    label="Upload blog image"
                   />
+                  {formData.imageUrl && (
+                    <div className="mt-2">
+                      <Image
+                        src={formData.imageUrl || "/placeholder.svg"}
+                        alt="Blog image"
+                        width={100}
+                        height={100}
+                        className="object-cover rounded"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

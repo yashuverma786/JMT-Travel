@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
+import { ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Import this
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const userData = await request.json()
-    const { username, email, password, role, permissions, status } = userData
+    const { username, email, password, role, status } = userData
 
     if (!username || !email || !password || !role) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
@@ -46,13 +47,15 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user
+    // Explicitly set permissions based on role, do not trust client-sent permissions for security.
+    const assignedPermissions: PermissionValue[] = ROLES_PERMISSIONS[role] || []
+
     const newUser = {
       username,
       email,
       password: hashedPassword,
       role,
-      permissions: permissions || [],
+      permissions: assignedPermissions, // Use permissions derived from role
       status: status || "active",
       createdAt: new Date(),
       lastLogin: null,

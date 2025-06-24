@@ -31,6 +31,15 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     updateData.inclusions = updateData.inclusions || []
     updateData.exclusions = updateData.exclusions || []
 
+    if (updateData.price) {
+      updateData.price = Number.parseFloat(updateData.price)
+    }
+    if (updateData.salePrice) {
+      updateData.salePrice = Number.parseFloat(updateData.salePrice)
+    } else if (updateData.hasOwnProperty("salePrice") && !updateData.salePrice) {
+      updateData.salePrice = null // Allow clearing sale price
+    }
+
     const result = await db
       .collection("trips")
       .updateOne({ _id: new ObjectId(id) }, { $set: { ...updateData, updatedAt: new Date() } })

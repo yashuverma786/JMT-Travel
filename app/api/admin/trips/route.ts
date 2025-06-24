@@ -16,14 +16,19 @@ export async function POST(request: NextRequest) {
   try {
     const tripData = await request.json()
     // Validate required fields
-    const { title, destination, tripType, durationDays, priceAdult } = tripData
-    if (!title || !destination || !tripType || durationDays == null || priceAdult == null) {
-      return NextResponse.json({ message: "Missing required fields for trip creation." }, { status: 400 })
+    const { title, destination, tripType, durationDays, price, salePrice } = tripData
+    if (!title || !destination || !tripType || durationDays == null || price == null) {
+      return NextResponse.json(
+        { message: "Missing required fields: title, destination, tripType, durationDays, price." },
+        { status: 400 },
+      )
     }
 
     const { db } = await connectToDatabase()
     const newTrip = {
       ...tripData,
+      price: Number.parseFloat(price), // Ensure price is a number
+      salePrice: salePrice ? Number.parseFloat(salePrice) : null, // Ensure salePrice is a number or null
       imageUrls: tripData.imageUrls || [],
       itinerary: tripData.itinerary || [],
       faqs: tripData.faqs || [],

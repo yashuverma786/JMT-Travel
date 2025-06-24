@@ -1,104 +1,100 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Home, Users, Settings, Hotel, Car } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
-import {
-  LayoutDashboard,
-  MapPin,
-  Plane,
-  Star,
-  Newspaper,
-  Users,
-  Briefcase,
-  Mail,
-  Download,
-  Globe,
-  Tag,
-  HotelIcon,
-  Car,
-  UserIcon as CustomRequestIcon,
-  Menu,
-  X,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { usePathname } from "next/navigation"
+import { type PermissionValue, PERMISSIONS } from "@/lib/permissions"
 
-export function AdminSidebar() {
+interface AdminSidebarProps {
+  userPermissions: PermissionValue[]
+}
+
+const AdminSidebar = ({ userPermissions }: AdminSidebarProps) => {
   const pathname = usePathname()
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
-  const navItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
-    { name: "Users", href: "/admin/dashboard/users", icon: Users },
-    { name: "Destinations", href: "/admin/dashboard/destinations", icon: MapPin },
-    { name: "Trip Types", href: "/admin/dashboard/trip-types", icon: Tag },
-    { name: "Trips", href: "/admin/dashboard/trips", icon: Plane },
-    { name: "Activities", href: "/admin/dashboard/activities", icon: Globe },
-    { name: "Hotels", href: "/admin/dashboard/hotels", icon: HotelIcon },
-    { name: "Car Rentals", href: "/admin/dashboard/rentals", icon: Car },
-    { name: "Reviews", href: "/admin/dashboard/reviews", icon: Star },
-    { name: "Blogs", href: "/admin/dashboard/blogs", icon: Newspaper },
-    { name: "Collaborators", href: "/admin/dashboard/collaborators", icon: Briefcase },
-    { name: "Leads", href: "/admin/dashboard/leads", icon: Mail },
-    { name: "Distribution", href: "/admin/dashboard/distribution", icon: Download },
-    { name: "Custom Requests", href: "/admin/dashboard/custom-requests", icon: CustomRequestIcon },
+  const routes = [
+    {
+      href: "/admin/dashboard",
+      label: "Dashboard",
+      icon: Home,
+      permission: PERMISSIONS.VIEW_DASHBOARD,
+    },
+    {
+      href: "/admin/dashboard/settings",
+      label: "Settings",
+      icon: Settings,
+      permission: PERMISSIONS.MANAGE_SETTINGS,
+    },
   ]
 
-  const SidebarContent = () => (
-    <>
-      <div className="text-xl font-bold mb-8 text-center text-white">JMT Admin</div>
-      <nav className="flex-1 space-y-1 overflow-y-auto">
-        {navItems.map((item) => (
-          <Link
-            key={item.name}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2.5 text-gray-300 transition-all hover:text-white hover:bg-gray-800 text-sm",
-              pathname === item.href && "bg-gray-700 text-white",
-              pathname.startsWith(item.href) && item.href !== "/admin/dashboard" && "bg-gray-700 text-white",
-            )}
-            onClick={() => setIsMobileOpen(false)}
-          >
-            <item.icon className="h-4 w-4 flex-shrink-0" />
-            <span className="truncate">{item.name}</span>
-          </Link>
-        ))}
-      </nav>
-    </>
-  )
-
   return (
-    <>
-      {/* Mobile Menu Button */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="fixed top-4 left-4 z-50 md:hidden bg-gray-900 text-white hover:bg-gray-800"
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
-      >
-        {isMobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-      </Button>
+    <div className="space-y-4 py-4">
+      <div className="px-3 py-2">
+        <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">Admin Panel</h2>
+        <div className="space-y-1">
+          {routes.map(
+            (route) =>
+              userPermissions.includes(route.permission) && (
+                <Link
+                  key={route.href}
+                  href={route.href}
+                  className={cn(
+                    "group flex items-center space-x-2 rounded-md px-4 py-2 font-medium hover:bg-secondary hover:text-secondary-foreground",
+                    pathname === route.href ? "bg-secondary text-secondary-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  <route.icon className="mr-2 h-4 w-4" />
+                  {route.label}
+                </Link>
+              ),
+          )}
+          {userPermissions.includes(PERMISSIONS.MANAGE_HOTELS) && (
+            <Link
+              href="/admin/dashboard/hotels"
+              className={cn(
+                "group flex items-center space-x-2 rounded-md px-4 py-2 font-medium hover:bg-secondary hover:text-secondary-foreground",
+                pathname === "/admin/dashboard/hotels"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              <Hotel className="mr-2 h-4 w-4" /> Hotels
+            </Link>
+          )}
 
-      {/* Mobile Overlay */}
-      {isMobileOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden" onClick={() => setIsMobileOpen(false)} />
-      )}
+          {userPermissions.includes(PERMISSIONS.MANAGE_RENTALS) && (
+            <Link
+              href="/admin/dashboard/rentals"
+              className={cn(
+                "group flex items-center space-x-2 rounded-md px-4 py-2 font-medium hover:bg-secondary hover:text-secondary-foreground",
+                pathname === "/admin/dashboard/rentals"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              <Car className="mr-2 h-4 w-4" /> Rentals
+            </Link>
+          )}
 
-      {/* Desktop Sidebar - Always Visible & Sticky */}
-      <aside className="hidden md:flex w-64 bg-gray-900 text-white h-screen flex-col p-4 fixed left-0 top-0 z-30">
-        <SidebarContent />
-      </aside>
-
-      {/* Mobile Sidebar - Collapsible */}
-      <aside
-        className={cn(
-          "fixed left-0 top-0 z-50 w-64 bg-gray-900 text-white h-screen flex-col p-4 transform transition-transform duration-300 ease-in-out md:hidden",
-          isMobileOpen ? "translate-x-0" : "-translate-x-full",
-        )}
-      >
-        <SidebarContent />
-      </aside>
-    </>
+          {userPermissions.includes(PERMISSIONS.MANAGE_USERS) && (
+            <Link
+              href="/admin/dashboard/users"
+              className={cn(
+                "group flex items-center space-x-2 rounded-md px-4 py-2 font-medium hover:bg-secondary hover:text-secondary-foreground",
+                pathname === "/admin/dashboard/users"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "text-muted-foreground",
+              )}
+            >
+              <Users className="mr-2 h-4 w-4" /> Users
+            </Link>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
+
+export default AdminSidebar
+export { AdminSidebar }

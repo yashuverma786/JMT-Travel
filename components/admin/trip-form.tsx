@@ -1,16 +1,19 @@
 "use client"
 
+import { Select } from "@/components/ui/select"
+
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, Minus, Upload, ArrowLeft } from "lucide-react"
+import { Plus, Minus, ArrowLeft } from "lucide-react"
+import { FileUpload } from "@/components/ui/file-upload" // Assuming FileUpload is for images
 
 interface TripFormProps {
   trip?: any
@@ -18,12 +21,20 @@ interface TripFormProps {
   onCancel: () => void
 }
 
+interface Destination {
+  _id: string
+  name: string
+  country: string
+}
+
 export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
   const [formData, setFormData] = useState({
     title: trip?.title || "",
-    image: trip?.image || "",
-    adultPrice: trip?.adultPrice || "",
-    childPrice: trip?.childPrice || "",
+    // image: trip?.image || "", // This will be handled by FileUpload
+    imageUrls: trip?.imageUrls || [], // Assuming you want to support multiple images
+    price: trip?.price || "", // Changed from adultPrice
+    salePrice: trip?.salePrice || "", // New field
+    destination: trip?.destination || "", // Will store destination ID or name
     overview: trip?.overview || "",
     itinerary: trip?.itinerary || [{ day: 1, title: "", description: "" }],
     includes: trip?.includes || [],
@@ -34,10 +45,32 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
     difficulty: trip?.difficulty || "",
     mapUrl: trip?.mapUrl || "",
     faqs: trip?.faqs || [{ question: "", answer: "" }],
+    tripType: trip?.tripType || "", // Assuming this field exists for trip type
+    durationDays: trip?.durationDays || "", // Assuming this field exists
+    trending: trip?.trending || false,
+    status: trip?.status || "draft",
   })
 
   const [includesInput, setIncludesInput] = useState("")
   const [excludesInput, setExcludesInput] = useState("")
+  const [destinations, setDestinations] = useState<Destination[]>([])
+
+  useEffect(() => {
+    const fetchDestinationsForForm = async () => {
+      try {
+        const response = await fetch("/api/admin/destinations")
+        if (response.ok) {
+          const data = await response.json()
+          setDestinations(data.destinations || [])
+        } else {
+          console.error("Failed to fetch destinations for form")
+        }
+      } catch (error) {
+        console.error("Error fetching destinations for form:", error)
+      }
+    }
+    fetchDestinationsForForm()
+  }, [])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -157,43 +190,69 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                 </div>
 
                 <div>
-                  <Label htmlFor="image">Image Upload</Label>
-                  <div className="flex items-center gap-4">
-                    <Input
-                      id="image"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      placeholder="Image URL or upload"
-                    />
-                    <Button type="button" variant="outline">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload
-                    </Button>
-                  </div>
+                  <Label>Trip Images</Label>
+                  <FileUpload
+                    value={formData.imageUrls}
+                    onChange={(urls) => setFormData({ ...formData, imageUrls: urls as string[] })}
+                    multiple={true} // Allow multiple images for a trip
+                    label="Upload trip images"
+                  />
+                  {formData.imageUrls.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {formData.imageUrls.map((url, index) => (
+                        <img
+                          key={index}
+                          src={url || "/placeholder.svg"}
+                          alt={`Trip image ${index + 1}`}
+                          className="h-20 w-20 object-cover rounded"
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="adultPrice">Adult Price (₹)</Label>
+                    <Label htmlFor="price">Normal Price (₹)</Label>
                     <Input
-                      id="adultPrice"
+                      id="price"
                       type="number"
-                      value={formData.adultPrice}
-                      onChange={(e) => setFormData({ ...formData, adultPrice: e.target.value })}
-                      placeholder="Adult price"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="Normal price"
                       required
                     />
                   </div>
                   <div>
-                    <Label htmlFor="childPrice">Child Price (₹)</Label>
+                    <Label htmlFor="salePrice">Sale Price (₹) (Optional)</Label>
                     <Input
-                      id="childPrice"
+                      id="salePrice"
                       type="number"
-                      value={formData.childPrice}
-                      onChange={(e) => setFormData({ ...formData, childPrice: e.target.value })}
-                      placeholder="Child price"
+                      value={formData.salePrice}
+                      onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
+                      placeholder="Sale price (if any)"
                     />
                   </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="destination">Destination</Label>
+                  <Select
+                    value={formData.destination}
+                    onValueChange={(value) => setFormData({ ...formData, destination: value })}
+                    required
+                  >
+                    <SelectTrigger id="destination">
+                      <SelectValue placeholder="Select destination" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {destinations.map((dest) => (
+                        <SelectItem key={dest._id} value={dest._id}>
+                          {dest.name} ({dest.country})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div>
