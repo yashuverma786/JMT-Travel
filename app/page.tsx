@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic"
 import FilterBar from "@/components/filter-bar"
 import SpecialOffersSection from "@/components/special-offers-section"
 import TrendingDestinations from "@/components/trending-destinations"
