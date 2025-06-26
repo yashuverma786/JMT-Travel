@@ -1,10 +1,10 @@
 import { MongoClient, type Db } from "mongodb"
 
 if (!process.env.MONGODB_URI) {
-  throw new Error("Please add your Mongo URI to .env.local")
+  throw new Error('Invalid/Missing environment variable: "MONGODB_URI"')
 }
 
-const uri: string = process.env.MONGODB_URI
+const uri = process.env.MONGODB_URI
 const options = {}
 
 let client: MongoClient
@@ -34,8 +34,8 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
     const db = client.db("jmt_travel")
     return { client, db }
   } catch (error) {
-    console.error("MongoDB connection error:", error)
-    throw new Error("Failed to connect to database")
+    console.error("Failed to connect to MongoDB:", error)
+    throw new Error("Database connection failed")
   }
 }
 

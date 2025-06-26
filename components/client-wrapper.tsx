@@ -6,10 +6,9 @@ import { useEffect, useState } from "react"
 
 interface ClientWrapperProps {
   children: React.ReactNode
-  fallback?: React.ReactNode
 }
 
-export default function ClientWrapper({ children, fallback = null }: ClientWrapperProps) {
+export default function ClientWrapper({ children }: ClientWrapperProps) {
   const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
@@ -17,7 +16,7 @@ export default function ClientWrapper({ children, fallback = null }: ClientWrapp
   }, [])
 
   if (!hasMounted) {
-    return <>{fallback}</>
+    return null
   }
 
   return <>{children}</>
