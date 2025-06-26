@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server"
-import prisma from "@/lib/prisma"
+import { connectToDatabase } from "@/lib/mongodb"
 import { checkPermissions } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
@@ -7,7 +7,8 @@ export async function GET(request: NextRequest) {
   if (permissionError) return permissionError
 
   try {
-    const hotels = await prisma.hotel.findMany()
+    const { db } = await connectToDatabase()
+    const hotels = await db.collection("hotels").find({}).sort({ createdAt: -1 }).toArray()
     return NextResponse.json(hotels)
   } catch (error) {
     console.error("Error fetching hotels:", error)
@@ -20,11 +21,14 @@ export async function POST(request: NextRequest) {
   if (permissionError) return permissionError
 
   try {
-    const json = await request.json()
-    const hotel = await prisma.hotel.create({
-      data: json,
+    const body = await request.json()
+    const { db } = await connectToDatabase()
+    const result = await db.collection("hotels").insertOne({
+      ...body,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     })
-    return NextResponse.json(hotel)
+    return NextResponse.json({ _id: result.insertedId, ...body }, { status: 201 })
   } catch (error) {
     console.error("Error creating hotel:", error)
     return NextResponse.json({ error: "Failed to create hotel" }, { status: 500 })
