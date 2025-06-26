@@ -20,23 +20,15 @@ import {
   Car,
   UserIcon as CustomRequestIcon,
 } from "lucide-react"
-import { ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Ensure this path is correct
+import type { PermissionValue } from "@/lib/permissions" // Ensure this path is correct
 
 export function AdminSidebar() {
   const pathname = usePathname()
   const { user } = useAdmin() // Get user from context
 
   const navItems = [
-    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, permissions: [] }, // Assuming dashboard is always visible
-    {
-      name: "Users",
-      href: "/admin/dashboard/users",
-      icon: Users,
-      permissions: [
-        ROLES_PERMISSIONS.admin?.includes("manage_users") ? "manage_users" : "",
-        ROLES_PERMISSIONS.super_admin?.includes("manage_users") ? "manage_users" : "",
-      ],
-    }, // Example, adjust as per your PERMISSIONS constants
+    { name: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, permissions: [] },
+    { name: "Users", href: "/admin/dashboard/users", icon: Users, permissions: ["manage_users"] },
     { name: "Destinations", href: "/admin/dashboard/destinations", icon: MapPin, permissions: ["manage_destinations"] },
     { name: "Trip Types", href: "/admin/dashboard/trip-types", icon: Tag, permissions: ["manage_trips"] },
     { name: "Trips", href: "/admin/dashboard/trips", icon: Plane, permissions: ["manage_trips"] },
@@ -45,14 +37,15 @@ export function AdminSidebar() {
       name: "Hotels",
       href: "/admin/dashboard/hotels",
       icon: HotelIcon,
-      permissions: ["manage_hotels", "approve_listings"],
+      permissions: ["manage_hotels", "manage_own_hotels"],
     },
     {
-      name: "Car Rentals",
-      href: "/admin/dashboard/rentals",
+      name: "Transfers",
+      href: "/admin/dashboard/transfers",
       icon: Car,
-      permissions: ["manage_rentals", "approve_listings"],
+      permissions: ["manage_transfers", "manage_rentals"],
     },
+    { name: "Car Rentals", href: "/admin/dashboard/rentals", icon: Car, permissions: ["manage_rentals"] },
     { name: "Reviews", href: "/admin/dashboard/reviews", icon: Star, permissions: ["manage_reviews"] },
     { name: "Blogs", href: "/admin/dashboard/blogs", icon: Newspaper, permissions: ["manage_blogs"] },
     {

@@ -232,6 +232,7 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       placeholder="e.g., 8000 (if on sale)"
                       min="0"
                     />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty if no discount</p>
                   </div>
                 </div>
 

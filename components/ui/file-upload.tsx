@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,16 +23,20 @@ export function FileUpload({ label, value, onChange, multiple = false, accept = 
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", "jmt_travel") // You'll need to create this in Cloudinary
-    formData.append("cloud_name", "your_cloud_name") // Replace with your Cloudinary cloud name
+    formData.append("upload_preset", "jmt_travel") // Create this preset in your Cloudinary dashboard
+    formData.append("cloud_name", "dvimun8pn")
 
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/your_cloud_name/image/upload", {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dvimun8pn/image/upload", {
         method: "POST",
         body: formData,
       })
       const data = await response.json()
-      return data.secure_url
+      if (data.secure_url) {
+        return data.secure_url
+      } else {
+        throw new Error("Upload failed")
+      }
     } catch (error) {
       console.error("Upload failed:", error)
       throw error

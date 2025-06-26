@@ -1,10 +1,10 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function HotelsLoading() {
+export default function TransfersLoading() {
   return (
     <div className="min-h-screen bg-gray-50">
-      <section className="py-12 bg-gradient-to-r from-blue-600 to-purple-600">
+      <section className="py-12 bg-gradient-to-r from-green-600 to-blue-600">
         <div className="container text-center">
           <Skeleton className="h-12 w-12 mx-auto mb-4 bg-white/20" />
           <Skeleton className="h-12 w-96 mx-auto mb-2 bg-white/20" />
@@ -30,7 +30,6 @@ export default function HotelsLoading() {
               <Skeleton className="h-56 w-full" />
               <CardContent className="p-4 space-y-3">
                 <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-4 w-full" />
                 <div className="flex justify-between items-center">
                   <Skeleton className="h-6 w-24" />

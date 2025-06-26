@@ -8,12 +8,12 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     if (!ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 })
 
     const { db } = await connectToDatabase()
-    const hotel = await db.collection("hotels").findOne({ _id: new ObjectId(id) })
+    const transfer = await db.collection("transfers").findOne({ _id: new ObjectId(id) })
 
-    if (!hotel) return NextResponse.json({ message: "Hotel not found" }, { status: 404 })
-    return NextResponse.json({ hotel })
+    if (!transfer) return NextResponse.json({ message: "Transfer not found" }, { status: 404 })
+    return NextResponse.json({ transfer })
   } catch (error) {
-    console.error("Error fetching hotel:", error)
+    console.error("Error fetching transfer:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }
@@ -26,22 +26,21 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const updateData = await request.json()
     const { db } = await connectToDatabase()
 
-    if (updateData.pricePerNight) {
-      updateData.pricePerNight = Number.parseFloat(updateData.pricePerNight)
+    if (updateData.price) {
+      updateData.price = Number.parseFloat(updateData.price)
     }
 
     updateData.images = updateData.images || []
-    updateData.amenities = updateData.amenities || []
     updateData.updatedAt = new Date()
 
-    const result = await db.collection("hotels").updateOne({ _id: new ObjectId(id) }, { $set: updateData })
+    const result = await db.collection("transfers").updateOne({ _id: new ObjectId(id) }, { $set: updateData })
 
-    if (result.matchedCount === 0) return NextResponse.json({ message: "Hotel not found" }, { status: 404 })
+    if (result.matchedCount === 0) return NextResponse.json({ message: "Transfer not found" }, { status: 404 })
 
-    const updatedHotel = await db.collection("hotels").findOne({ _id: new ObjectId(id) })
-    return NextResponse.json({ message: "Hotel updated successfully", hotel: updatedHotel })
+    const updatedTransfer = await db.collection("transfers").findOne({ _id: new ObjectId(id) })
+    return NextResponse.json({ message: "Transfer updated successfully", transfer: updatedTransfer })
   } catch (error) {
-    console.error("Error updating hotel:", error)
+    console.error("Error updating transfer:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }
@@ -52,12 +51,12 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     if (!ObjectId.isValid(id)) return NextResponse.json({ message: "Invalid ID" }, { status: 400 })
 
     const { db } = await connectToDatabase()
-    const result = await db.collection("hotels").deleteOne({ _id: new ObjectId(id) })
+    const result = await db.collection("transfers").deleteOne({ _id: new ObjectId(id) })
 
-    if (result.deletedCount === 0) return NextResponse.json({ message: "Hotel not found" }, { status: 404 })
-    return NextResponse.json({ message: "Hotel deleted successfully" })
+    if (result.deletedCount === 0) return NextResponse.json({ message: "Transfer not found" }, { status: 404 })
+    return NextResponse.json({ message: "Transfer deleted successfully" })
   } catch (error) {
-    console.error("Error deleting hotel:", error)
+    console.error("Error deleting transfer:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }

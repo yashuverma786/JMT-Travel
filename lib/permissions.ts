@@ -5,7 +5,8 @@ export const PERMISSIONS = {
   MANAGE_TRIPS: "manage_trips",
   MANAGE_HOTELS: "manage_hotels", // General hotel management
   MANAGE_OWN_HOTELS: "manage_own_hotels", // Specific for hotel listers
-  MANAGE_RENTALS: "manage_rentals",
+  MANAGE_RENTALS: "manage_rentals", // This will cover transfers too
+  MANAGE_TRANSFERS: "manage_transfers", // Specific for transfers
   MANAGE_BOOKINGS: "manage_bookings",
   MANAGE_REVIEWS: "manage_reviews",
   MANAGE_BLOGS: "manage_blogs",
@@ -29,6 +30,7 @@ export const ROLES_PERMISSIONS: Record<string, PermissionValue[]> = {
     PERMISSIONS.MANAGE_TRIPS,
     PERMISSIONS.MANAGE_HOTELS,
     PERMISSIONS.MANAGE_RENTALS,
+    PERMISSIONS.MANAGE_TRANSFERS,
     PERMISSIONS.MANAGE_BOOKINGS,
     PERMISSIONS.MANAGE_REVIEWS,
     PERMISSIONS.MANAGE_BLOGS,
@@ -48,5 +50,6 @@ export const ROLES_PERMISSIONS: Record<string, PermissionValue[]> = {
     PERMISSIONS.VIEW_DASHBOARD, // So they can see their dedicated dashboard
     PERMISSIONS.MANAGE_OWN_HOTELS, // Custom permission for their listings
   ],
+  transfer_manager: [PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.MANAGE_TRANSFERS],
   // Add other roles as needed
 }

@@ -198,6 +198,7 @@ export default function DestinationsPage() {
                 <Select
                   value={formData.type}
                   onValueChange={(value: "national" | "international") => setFormData({ ...formData, type: value })}
+                  required
                 >
                   <SelectTrigger id="destinationType">
                     <SelectValue placeholder="Select type" />

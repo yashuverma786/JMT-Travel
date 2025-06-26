@@ -1,41 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
-import { ObjectId } from "mongodb"
-
-// Helper to get current user from session (adapt to your auth setup)
-async function getCurrentUser(request: NextRequest) {
-  // This is a placeholder. Replace with your actual session/token validation logic.
-  // For example, if using JWT in headers:
-  // const token = request.headers.get('Authorization')?.split(' ')[1];
-  // if (!token) return null;
-  // try {
-  //   const decoded = jwt.verify(token, process.env.JWT_SECRET);
-  //   return decoded; // Should contain user id, role, permissions
-  // } catch (err) {
-  //   return null;
-  // }
-
-  // If using next-auth getSession, it's more complex in route handlers.
-  // For simplicity, we'll assume user info might be passed or handled by middleware.
-  // In a real app, secure this properly.
-  // For now, let's assume a middleware adds `request.user`
-  // return (request as any).user;
-  return null // Placeholder
-}
 
 export async function GET(request: NextRequest) {
   try {
     const { db } = await connectToDatabase()
-    const { searchParams } = new URL(request.url)
-    const ownerId = searchParams.get("ownerId")
-
-    let query = {}
-    if (ownerId && ObjectId.isValid(ownerId)) {
-      query = { ownerId: new ObjectId(ownerId) }
-    }
-    // Non-hotel_listers see all, hotel_listers see only their own (if ownerId provided)
-
-    const hotels = await db.collection("hotels").find(query).sort({ createdAt: -1 }).toArray()
+    const hotels = await db.collection("hotels").find({}).sort({ createdAt: -1 }).toArray()
     return NextResponse.json({ hotels })
   } catch (error) {
     console.error("Error fetching hotels:", error)
@@ -45,36 +14,24 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // const currentUser = await getCurrentUser(request); // Get current user
-    // if (!currentUser) return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
-
     const hotelData = await request.json()
-    const { name, city, country } = hotelData // Basic validation
+    const { name, location, pricePerNight, description } = hotelData
 
-    if (!name || !city || !country) {
-      return NextResponse.json({ message: "Name, city, and country are required" }, { status: 400 })
+    if (!name || !location || !pricePerNight || !description) {
+      return NextResponse.json(
+        { message: "Name, location, price per night, and description are required" },
+        { status: 400 },
+      )
     }
 
     const { db } = await connectToDatabase()
-
-    let status: "pending_approval" | "approved" = "approved" // Default for admin/super_admin
-    const ownerIdToSet = hotelData.ownerId
-
-    // If the request is from a hotel_lister (this logic needs to be based on authenticated user)
-    // For now, we assume if ownerId is passed and status is not, it's a hotel_lister submission
-    // This needs to be more robust based on actual user role from session/token
-    if (hotelData.ownerId && !hotelData.status /* && currentUser.role === 'hotel_lister' */) {
-      status = "pending_approval"
-    } else if (hotelData.status) {
-      status = hotelData.status // Allow admin to set status directly
-    }
-
     const newHotel = {
       ...hotelData,
-      ownerId: ownerIdToSet ? new ObjectId(ownerIdToSet) : null, // Store ownerId if provided
-      status: status,
+      pricePerNight: Number.parseFloat(pricePerNight),
       images: hotelData.images || [],
       amenities: hotelData.amenities || [],
+      status: "pending", // Default status for new hotels
+      createdBy: "admin", // TODO: Get from authenticated user
       createdAt: new Date(),
       updatedAt: new Date(),
     }
