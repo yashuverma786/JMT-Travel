@@ -9,7 +9,6 @@ import PopularDestinationsCarousel from "@/components/popular-destinations-carou
 import InteractiveHolidayPackages from "@/components/interactive-holiday-packages"
 import Testimonials from "@/components/testimonials"
 import FeaturedTripsSection from "@/components/featured-trips-section"
-import CustomizeTourSection from "@/components/customize-tour-section"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { TrendingUp, Award, Shield, Plane, MapPin, Calendar, Users } from "lucide-react"
@@ -154,10 +153,10 @@ export default function Home() {
         <FeaturedTripsSection />
       </ClientWrapper>
 
-      {/* Customize Tour Section */}
-      <ClientWrapper>
+      {/* Remove this section */}
+      {/* <ClientWrapper>
         <CustomizeTourSection />
-      </ClientWrapper>
+      </ClientWrapper> */}
 
       {/* Interactive Holiday Packages - Pick Your Perfect Plan */}
       <ClientWrapper>

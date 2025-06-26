@@ -33,6 +33,19 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
+    // Validate role
+    const allowedRoles = [
+      "super_admin",
+      "admin",
+      "hotel_manager",
+      "transfer_manager",
+      "trip_manager",
+      "content_manager",
+    ]
+    if (!allowedRoles.includes(role)) {
+      return NextResponse.json({ message: "Invalid role specified" }, { status: 400 })
+    }
+
     const { db } = await connectToDatabase()
 
     // Check if user already exists
@@ -47,7 +60,7 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Explicitly set permissions based on role, do not trust client-sent permissions for security.
+    // Explicitly set permissions based on role
     const assignedPermissions: PermissionValue[] = ROLES_PERMISSIONS[role] || []
 
     const newUser = {
@@ -55,7 +68,7 @@ export async function POST(request: NextRequest) {
       email,
       password: hashedPassword,
       role,
-      permissions: assignedPermissions, // Use permissions derived from role
+      permissions: assignedPermissions,
       status: status || "active",
       createdAt: new Date(),
       lastLogin: null,

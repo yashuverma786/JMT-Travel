@@ -188,36 +188,24 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                 </div>
 
                 <div>
-                  <Label>Trip Images</Label>
                   <FileUpload
+                    label="Trip Images"
                     value={formData.imageUrls}
                     onChange={(urls) => setFormData({ ...formData, imageUrls: urls as string[] })}
                     multiple={true}
-                    label="Upload trip images (first image is primary)"
+                    maxFiles={8}
                   />
-                  {formData.imageUrls.length > 0 && (
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {formData.imageUrls.map((url, index) => (
-                        <img
-                          key={index}
-                          src={url || "/placeholder.svg"}
-                          alt={`Trip image ${index + 1}`}
-                          className="h-20 w-20 object-cover rounded"
-                        />
-                      ))}
-                    </div>
-                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="normalPrice">Normal Price (₹)</Label>
+                    <Label htmlFor="normalPrice">Regular Price (₹)</Label>
                     <Input
                       id="normalPrice"
                       type="number"
                       value={formData.normalPrice}
                       onChange={(e) => setFormData({ ...formData, normalPrice: e.target.value })}
-                      placeholder="e.g., 10000"
+                      placeholder="e.g., 15000"
                       required
                       min="0"
                     />
@@ -229,10 +217,12 @@ export function TripForm({ trip, onSave, onCancel }: TripFormProps) {
                       type="number"
                       value={formData.salePrice}
                       onChange={(e) => setFormData({ ...formData, salePrice: e.target.value })}
-                      placeholder="e.g., 8000 (if on sale)"
+                      placeholder="e.g., 12000 (if on sale)"
                       min="0"
                     />
-                    <p className="text-xs text-gray-500 mt-1">Leave empty if no discount</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Leave empty for no discount. Must be less than regular price for discount to show.
+                    </p>
                   </div>
                 </div>
 

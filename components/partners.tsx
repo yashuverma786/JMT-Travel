@@ -4,52 +4,58 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { motion } from "framer-motion"
 
-const partners = [
-  {
-    id: 1,
-    name: "Accor Hotels",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-  {
-    id: 2,
-    name: "Amadeus",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-  {
-    id: 3,
-    name: "Travelport",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-  {
-    id: 4,
-    name: "Taj Group",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-  {
-    id: 5,
-    name: "Marriott",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-  {
-    id: 6,
-    name: "Hilton",
-    logo: "/placeholder.svg?height=80&width=160",
-  },
-]
+interface Collaborator {
+  _id: string
+  name: string
+  logo: string
+  website?: string
+  status: string
+}
 
 export default function Partners() {
   const [isClient, setIsClient] = useState(false)
+  const [collaborators, setCollaborators] = useState<Collaborator[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     setIsClient(true)
+    fetchCollaborators()
   }, [])
+
+  const fetchCollaborators = async () => {
+    try {
+      const response = await fetch("/api/collaborators")
+      if (response.ok) {
+        const data = await response.json()
+        // Filter only active collaborators
+        setCollaborators(data.collaborators?.filter((c: Collaborator) => c.status === "active") || [])
+      }
+    } catch (error) {
+      console.error("Error fetching collaborators:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   if (!isClient) {
     return null
   }
 
+  // Fallback partners if no collaborators are found
+  const fallbackPartners = [
+    { id: 1, name: "Accor Hotels", logo: "/placeholder.svg?height=80&width=160" },
+    { id: 2, name: "Amadeus", logo: "/placeholder.svg?height=80&width=160" },
+    { id: 3, name: "Travelport", logo: "/placeholder.svg?height=80&width=160" },
+    { id: 4, name: "Taj Group", logo: "/placeholder.svg?height=80&width=160" },
+    { id: 5, name: "Marriott", logo: "/placeholder.svg?height=80&width=160" },
+    { id: 6, name: "Hilton", logo: "/placeholder.svg?height=80&width=160" },
+  ]
+
+  const displayPartners = collaborators.length > 0 ? collaborators : fallbackPartners
+
   return (
     <section className="py-16 bg-gray-100 relative overflow-hidden">
+      {/* Background decorations remain the same */}
       <div className="absolute right-0 bottom-0">
         <motion.div
           initial={{ x: 100, y: 100 }}
@@ -85,15 +91,16 @@ export default function Partners() {
       <div className="container relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">We are proud to be Collaborate by Global Recognitions</h2>
+          {loading && <p className="text-gray-600">Loading our partners...</p>}
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8 items-center">
-          {partners.map((partner) => (
+          {displayPartners.map((partner, index) => (
             <motion.div
-              key={partner.id}
+              key={collaborators.length > 0 ? partner._id : `fallback-${index}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: partner.id * 0.1 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               whileHover={{ scale: 1.05 }}
               className="flex items-center justify-center p-4"
             >
@@ -108,6 +115,7 @@ export default function Partners() {
           ))}
         </div>
 
+        {/* Background decorations remain the same */}
         <motion.div
           className="absolute -bottom-10 -left-10 opacity-10"
           animate={{

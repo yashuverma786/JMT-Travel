@@ -20,7 +20,7 @@ export const PERMISSIONS = {
 
 export type PermissionValue = (typeof PERMISSIONS)[keyof typeof PERMISSIONS]
 
-// Example roles and their default permissions
+// Updated roles with restricted permissions
 export const ROLES_PERMISSIONS: Record<string, PermissionValue[]> = {
   super_admin: Object.values(PERMISSIONS),
   admin: [
@@ -38,18 +38,8 @@ export const ROLES_PERMISSIONS: Record<string, PermissionValue[]> = {
     PERMISSIONS.VIEW_ANALYTICS,
     PERMISSIONS.APPROVE_LISTINGS,
   ],
-  content_manager: [
-    PERMISSIONS.VIEW_DASHBOARD,
-    PERMISSIONS.MANAGE_BLOGS,
-    PERMISSIONS.MANAGE_REVIEWS,
-    // Optionally add limited trip/destination content update permissions if needed
-    // PERMISSIONS.MANAGE_TRIPS, (could be too broad, consider more granular if needed)
-    // PERMISSIONS.MANAGE_DESTINATIONS,
-  ],
-  hotel_lister: [
-    PERMISSIONS.VIEW_DASHBOARD, // So they can see their dedicated dashboard
-    PERMISSIONS.MANAGE_OWN_HOTELS, // Custom permission for their listings
-  ],
+  hotel_manager: [PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.MANAGE_HOTELS],
   transfer_manager: [PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.MANAGE_TRANSFERS],
-  // Add other roles as needed
+  trip_manager: [PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.MANAGE_TRIPS],
+  content_manager: [PERMISSIONS.VIEW_DASHBOARD, PERMISSIONS.MANAGE_BLOGS, PERMISSIONS.MANAGE_REVIEWS],
 }
