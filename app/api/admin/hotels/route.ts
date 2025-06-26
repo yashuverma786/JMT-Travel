@@ -1,48 +1,32 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+import { NextResponse, type NextRequest } from "next/server"
+import prisma from "@/lib/prisma"
+import { checkPermissions } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
+  const permissionError = await checkPermissions(request, ["manage_hotels"])
+  if (permissionError) return permissionError
+
   try {
-    const { db } = await connectToDatabase()
-    const hotels = await db.collection("hotels").find({}).sort({ createdAt: -1 }).toArray()
-    return NextResponse.json({ hotels })
+    const hotels = await prisma.hotel.findMany()
+    return NextResponse.json(hotels)
   } catch (error) {
     console.error("Error fetching hotels:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to fetch hotels" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  const permissionError = await checkPermissions(request, ["manage_hotels"])
+  if (permissionError) return permissionError
+
   try {
-    const hotelData = await request.json()
-    const { name, location, pricePerNight, description } = hotelData
-
-    if (!name || !location || !pricePerNight || !description) {
-      return NextResponse.json(
-        { message: "Name, location, price per night, and description are required" },
-        { status: 400 },
-      )
-    }
-
-    const { db } = await connectToDatabase()
-    const newHotel = {
-      ...hotelData,
-      pricePerNight: Number.parseFloat(pricePerNight),
-      images: hotelData.images || [],
-      amenities: hotelData.amenities || [],
-      status: "pending", // Default status for new hotels
-      createdBy: "admin", // TODO: Get from authenticated user
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-
-    const result = await db.collection("hotels").insertOne(newHotel)
-    return NextResponse.json(
-      { message: "Hotel created successfully", hotel: { _id: result.insertedId, ...newHotel } },
-      { status: 201 },
-    )
+    const json = await request.json()
+    const hotel = await prisma.hotel.create({
+      data: json,
+    })
+    return NextResponse.json(hotel)
   } catch (error) {
     console.error("Error creating hotel:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ error: "Failed to create hotel" }, { status: 500 })
   }
 }

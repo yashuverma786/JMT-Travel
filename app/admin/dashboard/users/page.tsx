@@ -1,396 +1,119 @@
 "use client"
 
-import type React from "react"
-
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Edit, Trash2, UserPlus, Key } from "lucide-react"
-
-interface User {
-  id: string
-  username: string
-  email: string
-  role: string
-  permissions: string[]
-  status: "active" | "inactive"
-  lastLogin?: string
-  createdAt: string
-}
-
-const roles = [
-  { value: "super_admin", label: "Super Admin", color: "bg-red-500" },
-  { value: "admin", label: "Admin", color: "bg-blue-500" },
-  { value: "content_manager", label: "Content Manager", color: "bg-green-500" },
-  { value: "distributor", label: "Distributor", color: "bg-purple-500" },
-  { value: "partner", label: "Partner", color: "bg-orange-500" },
-  { value: "viewer", label: "Viewer", color: "bg-gray-500" },
-]
-
-const permissions = [
-  "manage_users",
-  "manage_destinations",
-  "manage_trips",
-  "manage_bookings",
-  "manage_reviews",
-  "manage_blogs",
-  "manage_partners",
-  "view_analytics",
-  "approve_listings",
-  "manage_payments",
-]
+import { useState } from "react"
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [showForm, setShowForm] = useState(false)
-  const [editingUser, setEditingUser] = useState<User | null>(null)
-  const [formData, setFormData] = useState({
-    username: "",
-    email: "",
-    password: "",
-    role: "",
-    permissions: [] as string[],
-    status: "active" as const,
-  })
-  const [loading, setLoading] = useState(false)
+  const [users, setUsers] = useState([])
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
 
-  useEffect(() => {
-    fetchUsers()
-  }, [])
-
-  const fetchUsers = async () => {
-    try {
-      const response = await fetch("/api/admin/users")
-      if (response.ok) {
-        const data = await response.json()
-        setUsers(data.users)
-      }
-    } catch (error) {
-      console.error("Error fetching users:", error)
-    }
-  }
-
-  const filteredUsers = users.filter(
-    (user) =>
-      user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
-
-  const handleEdit = (user: User) => {
-    setEditingUser(user)
-    setFormData({
-      username: user.username,
-      email: user.email,
-      password: "",
-      role: user.role,
-      permissions: user.permissions,
-      status: user.status,
-    })
-    setShowForm(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      try {
-        const response = await fetch(`/api/admin/users/${id}`, {
-          method: "DELETE",
-        })
-        if (response.ok) {
-          setUsers(users.filter((user) => user.id !== id))
-        }
-      } catch (error) {
-        console.error("Error deleting user:", error)
-      }
-    }
-  }
-
-  const handleSave = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: any) => {
     e.preventDefault()
-    setLoading(true)
-
-    try {
-      const url = editingUser ? `/api/admin/users/${editingUser.id}` : "/api/admin/users"
-
-      const method = editingUser ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (editingUser) {
-          setUsers(users.map((user) => (user.id === editingUser.id ? data.user : user)))
-        } else {
-          setUsers([...users, data.user])
-        }
-        handleCancel()
-      }
-    } catch (error) {
-      console.error("Error saving user:", error)
+    // Basic form validation
+    if (!name || !email) {
+      alert("Please fill in all fields.")
+      return
     }
 
-    setLoading(false)
-  }
+    // Simulate adding a user (replace with actual API call)
+    const newUser = {
+      id: users.length + 1,
+      name,
+      email,
+    }
 
-  const handleCancel = () => {
-    setShowForm(false)
-    setEditingUser(null)
-    setFormData({
-      username: "",
-      email: "",
-      password: "",
-      role: "",
-      permissions: [],
-      status: "active",
-    })
-  }
-
-  const generateCredentials = (user: User) => {
-    const credentials = `
-Username: ${user.username}
-Email: ${user.email}
-Role: ${user.role}
-Login URL: ${window.location.origin}/admin
-Generated: ${new Date().toLocaleString()}
-    `.trim()
-
-    navigator.clipboard.writeText(credentials)
-    alert("Credentials copied to clipboard!")
-  }
-
-  if (showForm) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleCancel}>
-            ← Back
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{editingUser ? "Edit User" : "Add New User"}</h1>
-            <p className="text-gray-600">Manage user access and permissions</p>
-          </div>
-        </div>
-
-        <Card className="max-w-2xl">
-          <CardHeader>
-            <CardTitle>User Details</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSave} className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="username">Username</Label>
-                  <Input
-                    id="username"
-                    value={formData.username}
-                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                    placeholder="Enter username"
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    placeholder="Enter email"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="password">
-                  {editingUser ? "New Password (leave blank to keep current)" : "Password"}
-                </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Enter password"
-                  required={!editingUser}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value) => setFormData({ ...formData, role: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {roles.map((role) => (
-                        <SelectItem key={role.value} value={role.value}>
-                          {role.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: "active" | "inactive") => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div>
-                <Label>Permissions</Label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {permissions.map((permission) => (
-                    <div key={permission} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={permission}
-                        checked={formData.permissions.includes(permission)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setFormData({
-                              ...formData,
-                              permissions: [...formData.permissions, permission],
-                            })
-                          } else {
-                            setFormData({
-                              ...formData,
-                              permissions: formData.permissions.filter((p) => p !== permission),
-                            })
-                          }
-                        }}
-                      />
-                      <Label htmlFor={permission} className="text-sm">
-                        {permission.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingUser ? "Update User" : "Create User"}
-                </Button>
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Cancel
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    setUsers([...users, newUser])
+    setName("")
+    setEmail("")
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-          <p className="text-gray-600">Manage admin users and their permissions</p>
-        </div>
-        <Button onClick={() => setShowForm(true)}>
-          <UserPlus className="w-4 h-4 mr-2" />
-          Add User
-        </Button>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Users</h1>
+
+      {/* User List */}
+      <div className="mb-4">
+        <h2 className="text-lg font-semibold mb-2">User List</h2>
+        {users.length === 0 ? (
+          <p>No users yet.</p>
+        ) : (
+          <table className="min-w-full border border-gray-200">
+            <thead>
+              <tr>
+                <th className="px-4 py-2 border-b">ID</th>
+                <th className="px-4 py-2 border-b">Name</th>
+                <th className="px-4 py-2 border-b">Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              {users.map((user) => (
+                <tr key={user.id}>
+                  <td className="px-4 py-2 border-b">{user.id}</td>
+                  <td className="px-4 py-2 border-b">{user.name}</td>
+                  <td className="px-4 py-2 border-b">{user.email}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search users..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      {/* Add User Form */}
+      <div>
+        <h2 className="text-lg font-semibold mb-2">Add User</h2>
+        <form onSubmit={handleSubmit} className="max-w-sm">
+          <div className="mb-4">
+            <label htmlFor="name" className="block text-gray-700 text-sm font-bold mb-2">
+              Name:
+            </label>
+            <input
+              type="text"
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">User</th>
-                  <th className="text-left p-4">Role</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Last Login</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredUsers.map((user) => {
-                  const role = roles.find((r) => r.value === user.role)
-                  return (
-                    <tr key={user.id} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
-                        <div>
-                          <div className="font-medium">{user.username}</div>
-                          <div className="text-sm text-gray-500">{user.email}</div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <Badge className={`${role?.color} text-white`}>{role?.label}</Badge>
-                      </td>
-                      <td className="p-4">
-                        <Badge variant={user.status === "active" ? "default" : "secondary"}>{user.status}</Badge>
-                      </td>
-                      <td className="p-4 text-sm text-gray-500">
-                        {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : "Never"}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(user)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => generateCredentials(user)}>
-                            <Key className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+          <div className="mb-4">
+            <label htmlFor="email" className="block text-gray-700 text-sm font-bold mb-2">
+              Email:
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+            />
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="mb-4">
+            <label htmlFor="role" className="block text-gray-700 text-sm font-bold mb-2">
+              Role:
+            </label>
+            <select
+              name="role"
+              required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select Role</option>
+              <option value="admin">Admin</option>
+              <option value="hotel_manager">Hotel Manager</option>
+              <option value="transfer_manager">Transfer Manager</option>
+              <option value="trip_manager">Trip Manager</option>
+            </select>
+          </div>
+
+          <button
+            type="submit"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Add User
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

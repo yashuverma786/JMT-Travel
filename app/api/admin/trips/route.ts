@@ -1,51 +1,41 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+import { NextResponse, type NextRequest } from "next/server"
+import { prisma } from "@/lib/db"
+import { checkPermissions } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
+  const permissionError = await checkPermissions(request, ["manage_trips"])
+  if (permissionError) return permissionError
+
   try {
-    const { db } = await connectToDatabase()
-    const trips = await db.collection("trips").find({}).sort({ createdAt: -1 }).toArray()
-    return NextResponse.json({ trips })
+    const trips = await prisma.trip.findMany()
+    return NextResponse.json(trips)
   } catch (error) {
-    console.error("Error fetching trips:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    console.error(error)
+    return NextResponse.json({ message: "Error fetching trips" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  try {
-    const tripData = await request.json()
-    const { title, destinationId, tripType, durationDays, normalPrice, salePrice } = tripData // Added normalPrice, salePrice, changed destination to destinationId
-    if (!title || !destinationId || !tripType || durationDays == null || normalPrice == null) {
-      return NextResponse.json(
-        { message: "Missing required fields: title, destinationId, tripType, durationDays, normalPrice." },
-        { status: 400 },
-      )
-    }
+  const permissionError = await checkPermissions(request, ["manage_trips"])
+  if (permissionError) return permissionError
 
-    const { db } = await connectToDatabase()
-    const newTrip = {
-      ...tripData,
-      normalPrice: Number.parseFloat(normalPrice),
-      salePrice: salePrice ? Number.parseFloat(salePrice) : null,
-      destinationId, // Ensure this is stored
-      imageUrls: tripData.imageUrls || [],
-      itinerary: tripData.itinerary || [],
-      faqs: tripData.faqs || [],
-      inclusions: tripData.inclusions || [],
-      exclusions: tripData.exclusions || [],
-      trending: tripData.trending || false,
-      status: tripData.status || "draft",
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    }
-    const result = await db.collection("trips").insertOne(newTrip)
-    return NextResponse.json(
-      { message: "Trip created successfully", trip: { _id: result.insertedId, ...newTrip } },
-      { status: 201 },
-    )
+  try {
+    const data = await request.json()
+    const trip = await prisma.trip.create({
+      data: {
+        name: data.name,
+        location: data.location,
+        startDate: new Date(data.startDate),
+        endDate: new Date(data.endDate),
+        price: Number.parseFloat(data.price),
+        description: data.description,
+        imageUrl: data.imageUrl,
+        userId: data.userId,
+      },
+    })
+    return NextResponse.json(trip)
   } catch (error) {
-    console.error("Error creating trip:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    console.error(error)
+    return NextResponse.json({ message: "Error creating trip" }, { status: 500 })
   }
 }

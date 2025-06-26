@@ -33,15 +33,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
-    // Validate role
-    const allowedRoles = [
-      "super_admin",
-      "admin",
-      "hotel_manager",
-      "transfer_manager",
-      "trip_manager",
-      "content_manager",
-    ]
+    // Validate role - only allow these specific roles
+    const allowedRoles = ["super_admin", "admin", "hotel_manager", "transfer_manager", "trip_manager"]
     if (!allowedRoles.includes(role)) {
       return NextResponse.json({ message: "Invalid role specified" }, { status: 400 })
     }

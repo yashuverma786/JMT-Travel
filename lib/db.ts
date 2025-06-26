@@ -1,4 +1,5 @@
 import { MongoClient } from "mongodb"
+import prismaInstance from "./prisma"
 
 if (!process.env.MONGODB_URI) {
   throw new Error("MONGODB_URI environment variable is not set")
@@ -17,3 +18,5 @@ export async function getDb() {
   // 👇 change the DB name if you use something else
   return client.db("jmt_travel")
 }
+
+export const prisma = prismaInstance
