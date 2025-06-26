@@ -128,7 +128,7 @@ export default function Home() {
 
         <div className="container relative z-10 px-4 sm:px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8">
-            {stats.map((stat, index) => (
+            {stats?.map((stat, index) => (
               <Card
                 key={index}
                 className="text-center group hover:shadow-xl transition-all duration-500 hover:-translate-y-3 border-0 bg-gradient-to-br from-white to-gray-50"
@@ -215,7 +215,7 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {features.map((feature, index) => (
+            {features?.map((feature, index) => (
               <Card
                 key={index}
                 className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 border-0 bg-white/80 backdrop-blur-sm overflow-hidden"
