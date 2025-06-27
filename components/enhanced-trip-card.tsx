@@ -18,6 +18,7 @@ interface TripCardProps {
     overview?: string
     rating?: number
     reviewCount?: number
+    category?: string
   }
   className?: string
 }
@@ -45,8 +46,9 @@ export default function EnhancedTripCard({ trip, className = "" }: TripCardProps
               {discountPercentage}% OFF
             </Badge>
           )}
+          {trip.category && <Badge className="absolute top-3 left-3 bg-blue-600 text-white">{trip.category}</Badge>}
           {trip.rating && (
-            <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+            <div className="absolute bottom-3 left-3 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
               <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
               <span className="text-xs font-medium">{trip.rating}</span>
             </div>

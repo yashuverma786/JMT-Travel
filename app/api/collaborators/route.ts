@@ -1,23 +1,22 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
+import { connectToDatabase } from "@/lib/db"
 
-export const dynamic = "force-dynamic"
-
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    // For now, return empty array to prevent errors
-    // This will be populated when MongoDB is properly connected
+    const { db } = await connectToDatabase()
+
+    const collaborators = await db
+      .collection("collaborators")
+      .find({ status: "active" })
+      .sort({ createdAt: -1 })
+      .toArray()
+
     return NextResponse.json({
-      collaborators: [],
-      message: "No collaborators found",
+      success: true,
+      collaborators,
     })
   } catch (error) {
     console.error("Error fetching collaborators:", error)
-    return NextResponse.json(
-      {
-        collaborators: [],
-        message: "Error fetching collaborators",
-      },
-      { status: 500 },
-    )
+    return NextResponse.json({ success: false, error: "Failed to fetch collaborators" }, { status: 500 })
   }
 }

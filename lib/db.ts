@@ -1,22 +1,9 @@
-import { MongoClient } from "mongodb"
-import prismaInstance from "./prisma"
+import { getDb } from "./getDb" // Assuming getDb is exported from another file
 
-if (!process.env.MONGODB_URI) {
-  throw new Error("MONGODB_URI environment variable is not set")
+/**
+ * Named wrapper used by the API routes that expect `connectToDatabase`.
+ * Returns the same MongoDB database instance as `getDb`.
+ */
+export async function connectToDatabase() {
+  return getDb()
 }
-
-const uri = process.env.MONGODB_URI
-
-// Global caching in dev - avoids creating multiple clients
-let client: MongoClient | null = null
-
-export async function getDb() {
-  if (!client) {
-    client = new MongoClient(uri as string)
-    await client.connect()
-  }
-  // 👇 change the DB name if you use something else
-  return client.db("jmt_travel")
-}
-
-export const prisma = prismaInstance
