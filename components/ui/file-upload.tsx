@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useCallback } from "react"
-import { Upload, X, ImageIcon } from "lucide-react"
+import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 interface FileUploadProps {
   onUpload: (url: string) => void
@@ -18,32 +18,60 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const uploadToCloudinary = async (file: File) => {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET!)
+    // Check if environment variables are set
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 
-    const response = await fetch(
-      `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload`,
-      {
-        method: "POST",
-        body: formData,
-      },
-    )
-
-    if (!response.ok) {
-      throw new Error("Upload failed")
+    if (!cloudName || !uploadPreset) {
+      throw new Error("Cloudinary configuration missing. Please check environment variables.")
     }
 
-    const data = await response.json()
-    return data.secure_url
+    const formData = new FormData()
+    formData.append("file", file)
+    formData.append("upload_preset", uploadPreset)
+    formData.append("cloud_name", cloudName)
+
+    try {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: "POST",
+        body: formData,
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.error?.message || `Upload failed with status: ${response.status}`)
+      }
+
+      const data = await response.json()
+
+      if (!data.secure_url) {
+        throw new Error("No secure URL returned from Cloudinary")
+      }
+
+      return data.secure_url
+    } catch (error) {
+      console.error("Cloudinary upload error:", error)
+      throw error
+    }
   }
 
   const handleUpload = useCallback(
     async (file: File) => {
+      // Reset error state
+      setError(null)
+
+      // Validate file size
       if (file.size > maxSize) {
-        alert(`File size must be less than ${maxSize / (1024 * 1024)}MB`)
+        setError(`File size must be less than ${Math.round(maxSize / (1024 * 1024))}MB`)
+        return
+      }
+
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        setError("Please select a valid image file")
         return
       }
 
@@ -53,7 +81,13 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
       try {
         // Simulate progress
         const progressInterval = setInterval(() => {
-          setUploadProgress((prev) => Math.min(prev + 10, 90))
+          setUploadProgress((prev) => {
+            if (prev >= 90) {
+              clearInterval(progressInterval)
+              return 90
+            }
+            return prev + 10
+          })
         }, 200)
 
         const url = await uploadToCloudinary(file)
@@ -61,6 +95,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
         clearInterval(progressInterval)
         setUploadProgress(100)
 
+        // Small delay to show completion
         setTimeout(() => {
           onUpload(url)
           setUploading(false)
@@ -68,7 +103,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
         }, 500)
       } catch (error) {
         console.error("Upload error:", error)
-        alert("Upload failed. Please try again.")
+        setError(error instanceof Error ? error.message : "Upload failed. Please try again.")
         setUploading(false)
         setUploadProgress(0)
       }
@@ -106,17 +141,29 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
   }
 
   const removeImage = () => {
+    setError(null)
     onUpload("")
   }
 
   return (
-    <div className="w-full">
+    <div className="w-full space-y-4">
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
       {currentImage ? (
         <div className="relative">
           <img
             src={currentImage || "/placeholder.svg"}
             alt="Uploaded"
             className="w-full h-48 object-cover rounded-lg border"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement
+              target.src = "/placeholder.svg"
+            }}
           />
           <Button
             type="button"
@@ -144,7 +191,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
                 <Upload className="h-8 w-8 text-blue-500" />
               </div>
               <div className="space-y-2">
-                <p className="text-sm text-gray-600">Uploading...</p>
+                <p className="text-sm text-gray-600">Uploading image...</p>
                 <Progress value={uploadProgress} className="w-full" />
                 <p className="text-xs text-gray-500">{uploadProgress}%</p>
               </div>
@@ -155,6 +202,9 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
               <div>
                 <p className="text-lg font-medium text-gray-700">Drag and drop your image here</p>
                 <p className="text-sm text-gray-500">or click to browse</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Supports: JPG, PNG, GIF (Max: {Math.round(maxSize / (1024 * 1024))}MB)
+                </p>
               </div>
               <input type="file" accept={accept} onChange={handleFileSelect} className="hidden" id="file-upload" />
               <Button type="button" variant="outline" asChild>
@@ -163,7 +213,6 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
                   Choose File
                 </label>
               </Button>
-              <p className="text-xs text-gray-500">Max file size: {maxSize / (1024 * 1024)}MB</p>
             </div>
           )}
         </div>

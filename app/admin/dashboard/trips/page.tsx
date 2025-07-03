@@ -2,46 +2,50 @@
 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Search, Plus, Edit, Trash2 } from "lucide-react"
-import Image from "next/image"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import TripForm from "@/components/admin/trip-form"
+import { Plus, Search, Edit, Trash2, Eye, MapPin, Calendar, Star } from "lucide-react"
 
 interface Trip {
   _id: string
   title: string
   destinationId: string
   destinationName?: string
-  durationDays: number
-  durationNights: number
   adultPrice: number
   salePrice: number
+  durationDays: number
+  durationNights: number
   featuredImage: string
   status: string
   isTrending: boolean
-  discountPercentage?: number
+  createdAt: string
 }
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
+  const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
     fetchTrips()
   }, [])
 
   const fetchTrips = async () => {
-    setLoading(true)
     try {
+      setLoading(true)
       const response = await fetch("/api/admin/trips")
       if (response.ok) {
         const data = await response.json()
         setTrips(data)
+      } else {
+        console.error("Failed to fetch trips")
       }
     } catch (error) {
       console.error("Error fetching trips:", error)
@@ -50,38 +54,9 @@ export default function TripsPage() {
     }
   }
 
-  const filteredTrips = trips.filter(
-    (trip) =>
-      trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (trip.destinationName && trip.destinationName.toLowerCase().includes(searchTerm.toLowerCase())),
-  )
-
-  const handleEdit = (trip: Trip) => {
-    setEditingTrip(trip)
-    setShowForm(true)
-  }
-
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this trip?")) {
-      try {
-        const response = await fetch(`/api/admin/trips/${id}`, {
-          method: "DELETE",
-        })
-        if (response.ok) {
-          setTrips(trips.filter((t) => t._id !== id))
-        } else {
-          alert("Failed to delete trip.")
-        }
-      } catch (error) {
-        console.error("Error deleting trip:", error)
-        alert("An error occurred while deleting the trip.")
-      }
-    }
-  }
-
-  const handleSave = async (data: any) => {
-    setLoading(true)
+  const handleSubmit = async (tripData: any) => {
     try {
+      setSubmitting(true)
       const url = editingTrip ? `/api/admin/trips/${editingTrip._id}` : "/api/admin/trips"
       const method = editingTrip ? "PUT" : "POST"
 
@@ -90,27 +65,47 @@ export default function TripsPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(tripData),
       })
 
       if (response.ok) {
         await fetchTrips()
-        handleCancel()
+        setShowForm(false)
+        setEditingTrip(null)
       } else {
         const errorData = await response.json()
-        alert(errorData.message || "Failed to save trip.")
+        alert(`Error: ${errorData.message || "Failed to save trip"}`)
       }
     } catch (error) {
       console.error("Error saving trip:", error)
-      alert("An error occurred while saving the trip.")
+      alert("Error saving trip. Please try again.")
     } finally {
-      setLoading(false)
+      setSubmitting(false)
     }
   }
 
-  const handleCancel = () => {
-    setShowForm(false)
-    setEditingTrip(null)
+  const handleEdit = (trip: Trip) => {
+    setEditingTrip(trip)
+    setShowForm(true)
+  }
+
+  const handleDelete = async (tripId: string) => {
+    if (!confirm("Are you sure you want to delete this trip?")) return
+
+    try {
+      const response = await fetch(`/api/admin/trips/${tripId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        await fetchTrips()
+      } else {
+        alert("Failed to delete trip")
+      }
+    } catch (error) {
+      console.error("Error deleting trip:", error)
+      alert("Error deleting trip")
+    }
   }
 
   const calculateDiscount = (adultPrice: number, salePrice: number) => {
@@ -120,8 +115,16 @@ export default function TripsPage() {
     return 0
   }
 
+  const filteredTrips = trips.filter((trip) => {
+    const matchesSearch =
+      trip.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      trip.destinationName?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || trip.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
+
   if (showForm) {
-    return <TripForm trip={editingTrip} onSubmit={handleSave} isLoading={loading} />
+    return <TripForm trip={editingTrip} onSubmit={handleSubmit} isLoading={submitting} />
   }
 
   return (
@@ -129,127 +132,160 @@ export default function TripsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Trips Management</h1>
-          <p className="text-gray-600">Manage travel packages and holiday trips</p>
+          <p className="text-gray-600">Manage your travel packages and destinations</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Trip
+        <Button onClick={() => setShowForm(true)} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          Add New Trip
         </Button>
       </div>
 
+      {/* Filters */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search trips..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardContent className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search trips by title or destination..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">Image</th>
-                  <th className="text-left p-4">Title</th>
-                  <th className="text-left p-4">Destination</th>
-                  <th className="text-left p-4">Duration</th>
-                  <th className="text-left p-4">Pricing</th>
-                  <th className="text-left p-4">Status</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
-                      Loading trips...
-                    </td>
-                  </tr>
-                ) : filteredTrips.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
-                      No trips found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredTrips.map((trip) => {
-                    const discount = calculateDiscount(trip.adultPrice, trip.salePrice)
-                    return (
-                      <tr key={trip._id} className="border-b hover:bg-gray-50">
-                        <td className="p-4">
-                          <Image
-                            src={trip.featuredImage || "/placeholder.svg"}
-                            alt={trip.title}
-                            width={64}
-                            height={64}
-                            className="rounded-md object-cover"
-                          />
-                        </td>
-                        <td className="p-4">
-                          <div className="font-medium">{trip.title}</div>
-                          {trip.isTrending && <Badge className="bg-orange-500 text-white text-xs mt-1">Trending</Badge>}
-                        </td>
-                        <td className="p-4 text-gray-600">{trip.destinationName || "N/A"}</td>
-                        <td className="p-4 text-gray-600">
-                          {trip.durationDays}D/{trip.durationNights}N
-                        </td>
-                        <td className="p-4">
-                          <div className="space-y-1">
-                            <div className="font-semibold text-green-600">₹{trip.salePrice?.toLocaleString()}</div>
-                            {discount > 0 && (
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-500 line-through">
-                                  ₹{trip.adultPrice?.toLocaleString()}
-                                </span>
-                                <Badge className="bg-red-500 text-white text-xs">{discount}% OFF</Badge>
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <Badge
-                            className={
-                              trip.status === "active"
-                                ? "bg-green-500 text-white"
-                                : trip.status === "draft"
-                                  ? "bg-yellow-500 text-white"
-                                  : "bg-gray-500 text-white"
-                            }
-                          >
-                            {trip.status}
-                          </Badge>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline" onClick={() => handleEdit(trip)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDelete(trip._id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
+            <div className="w-full md:w-48">
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                  <SelectItem value="draft">Draft</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
+
+      {/* Trips Grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <div className="h-48 bg-gray-200 rounded-t-lg"></div>
+              <CardContent className="p-4 space-y-3">
+                <div className="h-4 bg-gray-200 rounded"></div>
+                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : filteredTrips.length === 0 ? (
+        <Card>
+          <CardContent className="p-12 text-center">
+            <div className="text-gray-400 mb-4">
+              <MapPin className="h-12 w-12 mx-auto" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">No trips found</h3>
+            <p className="text-gray-600 mb-4">
+              {searchTerm || statusFilter !== "all"
+                ? "No trips match your current filters."
+                : "Get started by creating your first trip package."}
+            </p>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Your First Trip
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredTrips.map((trip) => {
+            const discount = calculateDiscount(trip.adultPrice, trip.salePrice)
+            return (
+              <Card key={trip._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative">
+                  <img
+                    src={trip.featuredImage || "/placeholder.svg"}
+                    alt={trip.title}
+                    className="w-full h-48 object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = "/placeholder.svg"
+                    }}
+                  />
+                  <div className="absolute top-2 left-2 flex gap-2">
+                    <Badge
+                      variant={
+                        trip.status === "active" ? "default" : trip.status === "draft" ? "secondary" : "destructive"
+                      }
+                    >
+                      {trip.status}
+                    </Badge>
+                    {trip.isTrending && (
+                      <Badge className="bg-yellow-500 text-white">
+                        <Star className="h-3 w-3 mr-1" />
+                        Trending
+                      </Badge>
+                    )}
+                    {discount > 0 && <Badge className="bg-red-500 text-white">{discount}% OFF</Badge>}
+                  </div>
+                </div>
+
+                <CardContent className="p-4">
+                  <h3 className="font-semibold text-lg mb-2 line-clamp-2">{trip.title}</h3>
+
+                  <div className="space-y-2 text-sm text-gray-600 mb-4">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>{trip.destinationName || "Unknown Destination"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>
+                        {trip.durationDays} Days / {trip.durationNights} Nights
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold text-green-600">₹{trip.salePrice?.toLocaleString()}</span>
+                        {discount > 0 && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ₹{trip.adultPrice?.toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500">per person</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(trip)} className="flex-1">
+                      <Edit className="h-4 w-4 mr-1" />
+                      Edit
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => window.open(`/trips/${trip._id}`, "_blank")}>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(trip._id)}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
