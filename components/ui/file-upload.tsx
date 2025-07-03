@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { useState, useCallback } from "react"
-import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
+
+import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Upload, X, ImageIcon } from "lucide-react"
 
 interface FileUploadProps {
   onUpload: (url: string) => void
@@ -16,36 +16,27 @@ interface FileUploadProps {
 
 export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize = 5 * 1024 * 1024 }: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
+  const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const uploadToCloudinary = async (file: File) => {
-    const cloudName = "dvimun8pn"
-    const uploadPreset = "jmt_travel"
-
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", uploadPreset)
-    formData.append("cloud_name", cloudName)
+    formData.append("upload_preset", "jmt_travel_preset")
+    formData.append("cloud_name", "dvimun8pn")
 
     try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const response = await fetch("https://api.cloudinary.com/v1_1/dvimun8pn/image/upload", {
         method: "POST",
         body: formData,
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.error?.message || `Upload failed with status: ${response.status}`)
+        throw new Error(`Upload failed: ${response.statusText}`)
       }
 
       const data = await response.json()
-
-      if (!data.secure_url) {
-        throw new Error("No secure URL returned from Cloudinary")
-      }
-
       return data.secure_url
     } catch (error) {
       console.error("Cloudinary upload error:", error)
@@ -53,55 +44,55 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
     }
   }
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      setError(null)
+  const handleFileUpload = async (file: File) => {
+    if (!file) return
 
-      if (file.size > maxSize) {
-        setError(`File size must be less than ${Math.round(maxSize / (1024 * 1024))}MB`)
-        return
-      }
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file")
+      return
+    }
 
-      if (!file.type.startsWith("image/")) {
-        setError("Please select a valid image file")
-        return
-      }
+    // Validate file size
+    if (file.size > maxSize) {
+      alert(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
+      return
+    }
 
-      setUploading(true)
-      setUploadProgress(0)
+    setUploading(true)
+    setProgress(0)
 
-      try {
-        const progressInterval = setInterval(() => {
-          setUploadProgress((prev) => {
-            if (prev >= 90) {
-              clearInterval(progressInterval)
-              return 90
-            }
-            return prev + 10
-          })
-        }, 200)
+    try {
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval)
+            return 90
+          }
+          return prev + 10
+        })
+      }, 200)
 
-        const url = await uploadToCloudinary(file)
+      const url = await uploadToCloudinary(file)
 
-        clearInterval(progressInterval)
-        setUploadProgress(100)
+      clearInterval(progressInterval)
+      setProgress(100)
 
-        setTimeout(() => {
-          onUpload(url)
-          setUploading(false)
-          setUploadProgress(0)
-        }, 500)
-      } catch (error) {
-        console.error("Upload error:", error)
-        setError(error instanceof Error ? error.message : "Upload failed. Please try again.")
+      setTimeout(() => {
+        onUpload(url)
+        setProgress(0)
         setUploading(false)
-        setUploadProgress(0)
-      }
-    },
-    [maxSize, onUpload],
-  )
+      }, 500)
+    } catch (error) {
+      console.error("Upload error:", error)
+      alert("Upload failed. Please try again.")
+      setUploading(false)
+      setProgress(0)
+    }
+  }
 
-  const handleDrag = useCallback((e: React.DragEvent) => {
+  const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
     e.stopPropagation()
     if (e.type === "dragenter" || e.type === "dragover") {
@@ -109,106 +100,84 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
     } else if (e.type === "dragleave") {
       setDragActive(false)
     }
-  }, [])
+  }
 
-  const handleDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault()
-      e.stopPropagation()
-      setDragActive(false)
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setDragActive(false)
 
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleUpload(e.dataTransfer.files[0])
-      }
-    },
-    [handleUpload],
-  )
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleUpload(e.target.files[0])
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0])
     }
   }
 
-  const removeImage = () => {
-    setError(null)
-    onUpload("")
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0])
+    }
   }
 
   return (
-    <div className="w-full space-y-4">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-
-      {currentImage ? (
+    <div className="space-y-4">
+      {currentImage && (
         <div className="relative">
           <img
             src={currentImage || "/placeholder.svg"}
-            alt="Uploaded"
+            alt="Current image"
             className="w-full h-48 object-cover rounded-lg border"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.src = "/placeholder.svg"
-            }}
           />
           <Button
             type="button"
             variant="destructive"
             size="sm"
             className="absolute top-2 right-2"
-            onClick={removeImage}
+            onClick={() => onUpload("")}
           >
             <X className="h-4 w-4" />
           </Button>
         </div>
-      ) : (
-        <div
-          className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-            dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-          } ${uploading ? "pointer-events-none opacity-50" : ""}`}
-          onDragEnter={handleDrag}
-          onDragLeave={handleDrag}
-          onDragOver={handleDrag}
-          onDrop={handleDrop}
-        >
-          {uploading ? (
-            <div className="space-y-4">
-              <div className="animate-spin mx-auto">
-                <Upload className="h-8 w-8 text-blue-500" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-sm text-gray-600">Uploading image...</p>
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-xs text-gray-500">{uploadProgress}%</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <ImageIcon className="h-12 w-12 text-gray-400 mx-auto" />
-              <div>
-                <p className="text-lg font-medium text-gray-700">Drag and drop your image here</p>
-                <p className="text-sm text-gray-500">or click to browse</p>
-                <p className="text-xs text-gray-400 mt-1">
-                  Supports: JPG, PNG, GIF (Max: {Math.round(maxSize / (1024 * 1024))}MB)
-                </p>
-              </div>
-              <input type="file" accept={accept} onChange={handleFileSelect} className="hidden" id="file-upload" />
-              <Button type="button" variant="outline" asChild>
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Upload className="h-4 w-4 mr-2" />
-                  Choose File
-                </label>
-              </Button>
-            </div>
-          )}
-        </div>
       )}
+
+      <div
+        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+        } ${uploading ? "pointer-events-none opacity-50" : "cursor-pointer hover:border-gray-400"}`}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept={accept}
+          onChange={handleFileSelect}
+          className="hidden"
+          disabled={uploading}
+        />
+
+        {uploading ? (
+          <div className="space-y-2">
+            <div className="animate-spin mx-auto h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
+            <p className="text-sm text-gray-600">Uploading...</p>
+            <Progress value={progress} className="w-full max-w-xs mx-auto" />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <div>
+              <p className="text-sm font-medium">Click to upload or drag and drop</p>
+              <p className="text-xs text-gray-500">PNG, JPG, GIF up to {Math.round(maxSize / 1024 / 1024)}MB</p>
+            </div>
+            <Button type="button" variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Choose File
+            </Button>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
-
-export default FileUpload
