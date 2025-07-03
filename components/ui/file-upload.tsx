@@ -21,13 +21,8 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
   const [error, setError] = useState<string | null>(null)
 
   const uploadToCloudinary = async (file: File) => {
-    // Check if environment variables are set
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
-    const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
-
-    if (!cloudName || !uploadPreset) {
-      throw new Error("Cloudinary configuration missing. Please check environment variables.")
-    }
+    const cloudName = "dvimun8pn"
+    const uploadPreset = "jmt_travel"
 
     const formData = new FormData()
     formData.append("file", file)
@@ -60,16 +55,13 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
 
   const handleUpload = useCallback(
     async (file: File) => {
-      // Reset error state
       setError(null)
 
-      // Validate file size
       if (file.size > maxSize) {
         setError(`File size must be less than ${Math.round(maxSize / (1024 * 1024))}MB`)
         return
       }
 
-      // Validate file type
       if (!file.type.startsWith("image/")) {
         setError("Please select a valid image file")
         return
@@ -79,7 +71,6 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
       setUploadProgress(0)
 
       try {
-        // Simulate progress
         const progressInterval = setInterval(() => {
           setUploadProgress((prev) => {
             if (prev >= 90) {
@@ -95,7 +86,6 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
         clearInterval(progressInterval)
         setUploadProgress(100)
 
-        // Small delay to show completion
         setTimeout(() => {
           onUpload(url)
           setUploading(false)
