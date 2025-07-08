@@ -170,16 +170,48 @@ export default function TripForm({ trip, onSubmit, onCancel, isLoading }: TripFo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
+    // Validate required fields
+    if (!formData.title.trim()) {
+      alert("Title is required")
+      return
+    }
+
+    if (!formData.destinationId) {
+      alert("Please select a destination")
+      return
+    }
+
+    if (formData.durationDays <= 0) {
+      alert("Duration days must be greater than 0")
+      return
+    }
+
+    if (formData.adultPrice <= 0) {
+      alert("Adult price must be greater than 0")
+      return
+    }
+
+    if (formData.salePrice <= 0) {
+      alert("Sale price must be greater than 0")
+      return
+    }
+
     // Clean up empty array items
     const cleanedData = {
       ...formData,
       highlights: formData.highlights.filter((item) => item.trim() !== ""),
       inclusions: formData.inclusions.filter((item) => item.trim() !== ""),
       exclusions: formData.exclusions.filter((item) => item.trim() !== ""),
+      itinerary: formData.itinerary.filter((item) => item.title.trim() !== "" || item.description.trim() !== ""),
       discountPercentage,
     }
 
-    await onSubmit(cleanedData)
+    try {
+      await onSubmit(cleanedData)
+    } catch (error) {
+      console.error("Error submitting form:", error)
+      alert("Error saving trip. Please try again.")
+    }
   }
 
   return (

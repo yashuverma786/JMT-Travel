@@ -23,24 +23,28 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", "jmt_travel_preset")
-    formData.append("cloud_name", "dvimun8pn")
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "jmt_travel_preset")
+    formData.append("cloud_name", process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn")
 
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dvimun8pn/image/upload", {
-        method: "POST",
-        body: formData,
-      })
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn"}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      )
 
       if (!response.ok) {
-        throw new Error(`Upload failed: ${response.statusText}`)
+        const errorData = await response.json()
+        throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`)
       }
 
       const data = await response.json()
       return data.secure_url
     } catch (error) {
       console.error("Cloudinary upload error:", error)
-      throw error
+      throw new Error("Failed to upload image. Please try again.")
     }
   }
 
@@ -49,7 +53,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file")
+      alert("Please select an image file (JPG, PNG, GIF)")
       return
     }
 
@@ -86,7 +90,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
       }, 500)
     } catch (error) {
       console.error("Upload error:", error)
-      alert("Upload failed. Please try again.")
+      alert(error instanceof Error ? error.message : "Upload failed. Please try again.")
       setUploading(false)
       setProgress(0)
     }

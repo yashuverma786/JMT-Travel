@@ -24,22 +24,40 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const updateData = await request.json()
     const { db } = await connectToDatabase()
 
+    // Convert destinationId to ObjectId if it's a string
+    if (updateData.destinationId && typeof updateData.destinationId === "string") {
+      updateData.destinationId = new ObjectId(updateData.destinationId)
+    }
+
     // Ensure numeric fields are numbers
-    if (updateData.normalPrice) {
-      updateData.normalPrice = Number.parseFloat(updateData.normalPrice)
+    if (updateData.adultPrice) {
+      updateData.adultPrice = Number.parseFloat(updateData.adultPrice)
     }
     if (updateData.salePrice) {
       updateData.salePrice = Number.parseFloat(updateData.salePrice)
-    } else if (updateData.hasOwnProperty("salePrice") && !updateData.salePrice) {
-      updateData.salePrice = null // Allow clearing sale price
+    }
+    if (updateData.childPrice) {
+      updateData.childPrice = Number.parseFloat(updateData.childPrice)
+    }
+    if (updateData.durationDays) {
+      updateData.durationDays = Number.parseInt(updateData.durationDays)
+    }
+    if (updateData.durationNights) {
+      updateData.durationNights = Number.parseInt(updateData.durationNights)
+    }
+    if (updateData.minPax) {
+      updateData.minPax = Number.parseInt(updateData.minPax)
+    }
+    if (updateData.maxPax) {
+      updateData.maxPax = Number.parseInt(updateData.maxPax)
     }
 
     // Ensure arrays are handled correctly
-    updateData.imageUrls = updateData.imageUrls || []
-    updateData.itinerary = updateData.itinerary || []
-    updateData.faqs = updateData.faqs || []
-    updateData.inclusions = updateData.inclusions || []
-    updateData.exclusions = updateData.exclusions || []
+    updateData.highlights = Array.isArray(updateData.highlights) ? updateData.highlights.filter((h) => h.trim()) : []
+    updateData.inclusions = Array.isArray(updateData.inclusions) ? updateData.inclusions.filter((i) => i.trim()) : []
+    updateData.exclusions = Array.isArray(updateData.exclusions) ? updateData.exclusions.filter((e) => e.trim()) : []
+    updateData.itinerary = Array.isArray(updateData.itinerary) ? updateData.itinerary : []
+    updateData.galleryImages = Array.isArray(updateData.galleryImages) ? updateData.galleryImages : []
 
     const result = await db
       .collection("trips")
@@ -47,8 +65,33 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     if (result.matchedCount === 0) return NextResponse.json({ message: "Trip not found" }, { status: 404 })
 
-    const updatedTrip = await db.collection("trips").findOne({ _id: new ObjectId(id) })
-    return NextResponse.json({ message: "Trip updated successfully", trip: updatedTrip })
+    // Return updated trip with destination name
+    const updatedTrip = await db
+      .collection("trips")
+      .aggregate([
+        { $match: { _id: new ObjectId(id) } },
+        {
+          $lookup: {
+            from: "destinations",
+            localField: "destinationId",
+            foreignField: "_id",
+            as: "destination",
+          },
+        },
+        {
+          $addFields: {
+            destinationName: { $arrayElemAt: ["$destination.name", 0] },
+          },
+        },
+        {
+          $project: {
+            destination: 0,
+          },
+        },
+      ])
+      .toArray()
+
+    return NextResponse.json({ message: "Trip updated successfully", trip: updatedTrip[0] })
   } catch (error) {
     console.error("Error updating trip:", error)
     return NextResponse.json({ message: "Internal server error" }, { status: 500 })
