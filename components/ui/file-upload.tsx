@@ -1,11 +1,10 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { Upload, X, ImageIcon } from "lucide-react"
+import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 
 interface FileUploadProps {
   onUpload: (url: string) => void
@@ -18,48 +17,47 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const uploadToCloudinary = async (file: File) => {
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "jmt_travel_preset")
-    formData.append("cloud_name", process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn")
+    formData.append("upload_preset", "jmt_travel_preset")
 
     try {
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn"}/image/upload`,
-        {
-          method: "POST",
-          body: formData,
-        },
-      )
+      const response = await fetch("https://api.cloudinary.com/v1_1/dvimun8pn/image/upload", {
+        method: "POST",
+        body: formData,
+      })
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(`Upload failed: ${errorData.error?.message || response.statusText}`)
+        throw new Error(errorData.error?.message || `Upload failed: ${response.statusText}`)
       }
 
       const data = await response.json()
       return data.secure_url
     } catch (error) {
       console.error("Cloudinary upload error:", error)
-      throw new Error("Failed to upload image. Please try again.")
+      throw new Error("Failed to upload image. Please check your internet connection and try again.")
     }
   }
 
   const handleFileUpload = async (file: File) => {
     if (!file) return
 
+    setError(null)
+
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file (JPG, PNG, GIF)")
+      setError("Please select an image file (JPG, PNG, GIF)")
       return
     }
 
     // Validate file size
     if (file.size > maxSize) {
-      alert(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
+      setError(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
       return
     }
 
@@ -87,10 +85,11 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
         onUpload(url)
         setProgress(0)
         setUploading(false)
+        setError(null)
       }, 500)
     } catch (error) {
       console.error("Upload error:", error)
-      alert(error instanceof Error ? error.message : "Upload failed. Please try again.")
+      setError(error instanceof Error ? error.message : "Upload failed. Please try again.")
       setUploading(false)
       setProgress(0)
     }
@@ -140,6 +139,13 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
           >
             <X className="h-4 w-4" />
           </Button>
+        </div>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+          <AlertCircle className="h-4 w-4" />
+          <span className="text-sm">{error}</span>
         </div>
       )}
 

@@ -1,5 +1,6 @@
-import { NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+const { MongoClient, ObjectId } = require("mongodb")
+
+const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/jmt-travel"
 
 const destinations = [
   {
@@ -64,22 +65,39 @@ const destinations = [
   },
 ]
 
-export async function POST() {
+async function seedDestinations() {
+  const client = new MongoClient(MONGODB_URI)
+
   try {
-    const { db } = await connectToDatabase()
+    await client.connect()
+    const db = client.db()
 
     // Clear existing destinations
     await db.collection("destinations").deleteMany({})
 
     // Insert new destinations
     const result = await db.collection("destinations").insertMany(destinations)
+    console.log(`✅ Inserted ${result.insertedCount} destinations`)
 
-    return NextResponse.json({
-      message: `Successfully seeded ${result.insertedCount} destinations`,
-      insertedIds: result.insertedIds,
-    })
+    return result.insertedIds
   } catch (error) {
-    console.error("Error seeding destinations:", error)
-    return NextResponse.json({ message: "Failed to seed destinations", error: error.message }, { status: 500 })
+    console.error("❌ Error seeding destinations:", error)
+    throw error
+  } finally {
+    await client.close()
   }
+}
+
+module.exports = { seedDestinations, destinations }
+
+if (require.main === module) {
+  seedDestinations()
+    .then(() => {
+      console.log("🎉 Destinations seeded successfully!")
+      process.exit(0)
+    })
+    .catch((error) => {
+      console.error("💥 Failed to seed destinations:", error)
+      process.exit(1)
+    })
 }

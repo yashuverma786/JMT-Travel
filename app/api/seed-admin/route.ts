@@ -2,64 +2,53 @@ import { NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 
-export async function GET() {
+export async function POST() {
   try {
-    const { db, client } = await connectToDatabase()
-    const usersCollection = db.collection("admin_users")
+    const { db } = await connectToDatabase()
 
-    const defaultUsername = "Trip.jmt"
-    const defaultPassword = "QAZqaz#JMT0202"
-    const defaultEmail = "travel@journeymytrip.com"
+    // Check if admin user already exists
+    const existingAdmin = await db.collection("users").findOne({ email: "admin@jmttravel.com" })
 
-    // Check if the default admin user already exists
-    const existingUser = await usersCollection.findOne({ username: defaultUsername })
-
-    if (existingUser) {
-      console.log(`User '${defaultUsername}' already exists. Skipping seeding.`)
-      return NextResponse.json(
-        { message: `User '${defaultUsername}' already exists. No action taken.` },
-        { status: 200 },
-      )
+    if (existingAdmin) {
+      return NextResponse.json({ message: "Admin user already exists" })
     }
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10) // 10 is the salt rounds
+    // Create admin user
+    const hashedPassword = await bcrypt.hash("admin123", 12)
 
-    // Create the default admin user
-    const newUser = {
-      username: defaultUsername,
-      email: defaultEmail,
+    const adminUser = {
+      email: "admin@jmttravel.com",
       password: hashedPassword,
       role: "super_admin",
       permissions: [
         "manage_users",
         "manage_destinations",
         "manage_trips",
-        "manage_bookings",
+        "manage_hotels",
+        "manage_transfers",
+        "manage_rentals",
         "manage_reviews",
         "manage_blogs",
         "manage_partners",
         "view_analytics",
         "approve_listings",
-        "manage_payments",
       ],
-      status: "active",
       createdAt: new Date(),
-      lastLogin: null,
+      updatedAt: new Date(),
     }
 
-    const result = await usersCollection.insertOne(newUser)
-    console.log(`Successfully seeded default admin user: ${defaultUsername} with ID: ${result.insertedId}`)
+    const result = await db.collection("users").insertOne(adminUser)
 
-    return NextResponse.json(
-      {
-        message: `Successfully seeded default admin user: ${defaultUsername}`,
-        userId: result.insertedId,
+    return NextResponse.json({
+      message: "Admin user created successfully",
+      userId: result.insertedId,
+      credentials: {
+        email: "admin@jmttravel.com",
+        password: "admin123",
       },
-      { status: 201 },
-    )
+    })
   } catch (error) {
-    console.error("Error seeding admin user via API:", error)
-    return NextResponse.json({ message: "Internal server error during seeding." }, { status: 500 })
+    console.error("Error creating admin user:", error)
+    return NextResponse.json({ message: "Failed to create admin user", error: error.message }, { status: 500 })
   }
 }

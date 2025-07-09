@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { connectToDatabase } from "../../../lib/mongodb"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (destination) {
-      filter.destinationName = { $regex: destination, $options: "i" }
+      filter.destinationId = destination
     }
 
     if (minPrice || maxPrice) {
@@ -31,10 +31,11 @@ export async function GET(request: NextRequest) {
       if (maxPrice) filter.salePrice.$lte = Number.parseInt(maxPrice)
     }
 
-    // Get trips with destination names
+    // Get trips with destination information
     const trips = await db
       .collection("trips")
       .aggregate([
+        { $match: filter },
         {
           $lookup: {
             from: "destinations",
@@ -46,69 +47,34 @@ export async function GET(request: NextRequest) {
         {
           $addFields: {
             destinationName: { $arrayElemAt: ["$destination.name", 0] },
+            destinationCountry: { $arrayElemAt: ["$destination.country", 0] },
           },
-        },
-        {
-          $match: filter,
         },
         {
           $project: {
             destination: 0,
           },
         },
-        {
-          $sort: { isTrending: -1, createdAt: -1 },
-        },
-        {
-          $skip: skip,
-        },
-        {
-          $limit: limit,
-        },
+        { $sort: { isTrending: -1, createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
       ])
       .toArray()
 
     // Get total count for pagination
-    const totalTrips = await db
-      .collection("trips")
-      .aggregate([
-        {
-          $lookup: {
-            from: "destinations",
-            localField: "destinationId",
-            foreignField: "_id",
-            as: "destination",
-          },
-        },
-        {
-          $addFields: {
-            destinationName: { $arrayElemAt: ["$destination.name", 0] },
-          },
-        },
-        {
-          $match: filter,
-        },
-        {
-          $count: "total",
-        },
-      ])
-      .toArray()
-
-    const total = totalTrips[0]?.total || 0
-    const totalPages = Math.ceil(total / limit)
+    const totalCount = await db.collection("trips").countDocuments(filter)
 
     return NextResponse.json({
       trips,
       pagination: {
-        currentPage: page,
-        totalPages,
-        totalTrips: total,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1,
+        page,
+        limit,
+        total: totalCount,
+        pages: Math.ceil(totalCount / limit),
       },
     })
   } catch (error) {
     console.error("Error fetching trips:", error)
-    return NextResponse.json({ message: "Error fetching trips" }, { status: 500 })
+    return NextResponse.json({ message: "Error fetching trips", trips: [] }, { status: 500 })
   }
 }
