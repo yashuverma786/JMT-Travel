@@ -3,6 +3,7 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
+import { AdminProvider } from "@/components/admin/admin-context"
 
 export default function AdminLayout({
   children,
@@ -42,7 +43,7 @@ export default function AdminLayout({
 
   // Login page - no auth check needed
   if (pathname === "/admin") {
-    return children
+    return <AdminProvider>{children}</AdminProvider>
   }
 
   // Dashboard routes - check auth
@@ -59,9 +60,9 @@ export default function AdminLayout({
       return null // Will redirect to login
     }
 
-    return children
+    return <AdminProvider>{children}</AdminProvider>
   }
 
   // Other admin routes
-  return children
+  return <AdminProvider>{children}</AdminProvider>
 }

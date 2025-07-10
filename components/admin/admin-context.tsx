@@ -1,267 +1,141 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
-import { PERMISSIONS, ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Ensure this path is correct
+import type React from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 
-interface AdminUser {
-  username: string
+interface User {
+  _id: string
+  email: string
   role: string
-  permissions: PermissionValue[]
+  permissions: string[]
 }
 
 interface AdminContextType {
-  sidebarOpen: boolean
-  setSidebarOpen: (open: boolean) => void
-  user: AdminUser | null
-  destinations: any[]
-  setDestinations: (destinations: any[]) => void
-  tripTypes: any[]
-  setTripTypes: (tripTypes: any[]) => void
-  activities: any[]
-  setActivities: (activities: any[]) => void
-  trips: any[]
-  setTrips: (trips: any[]) => void
-  reviews: any[]
-  setReviews: (reviews: any[]) => void
-  blogs: any[]
-  setBlogs: (blogs: any[]) => void
-  collaborators: any[]
-  setCollaborators: (collaborators: any[]) => void
-  leads: any[]
-  setLeads: (leads: any[]) => void
+  user: User | null
+  token: string | null
+  login: (email: string, password: string) => Promise<boolean>
+  logout: () => void
+  isLoading: boolean
+  apiCall: (url: string, options?: RequestInit) => Promise<Response>
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
-export function AdminProvider({ children }: { children: ReactNode }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [user, setUser] = useState<AdminUser | null>(null)
-
-  // Initialize data from localStorage or default values
-  const [destinations, setDestinations] = useState([
-    {
-      id: "1",
-      name: "Goa",
-      country: "India",
-      description: "Beautiful beaches and vibrant nightlife",
-      image: "/placeholder.svg?height=200&width=300&text=Goa",
-      status: "active",
-      trips: 12,
-    },
-    {
-      id: "2",
-      name: "Kerala",
-      country: "India",
-      description: "Backwaters and hill stations",
-      image: "/placeholder.svg?height=200&width=300&text=Kerala",
-      status: "active",
-      trips: 8,
-    },
-    {
-      id: "3",
-      name: "Rajasthan",
-      country: "India",
-      description: "Royal palaces and desert landscapes",
-      image: "/placeholder.svg?height=200&width=300&text=Rajasthan",
-      status: "active",
-      trips: 15,
-    },
-  ])
-
-  const [tripTypes, setTripTypes] = useState([
-    { id: "1", name: "Adventure", description: "Thrilling outdoor activities", status: "active", trips: 25 },
-    { id: "2", name: "Cultural", description: "Heritage and cultural experiences", status: "active", trips: 18 },
-    { id: "3", name: "Beach", description: "Relaxing beach holidays", status: "active", trips: 12 },
-    { id: "4", name: "Wildlife", description: "Safari and nature tours", status: "active", trips: 8 },
-  ])
-
-  const [activities, setActivities] = useState([
-    {
-      id: "1",
-      name: "Scuba Diving",
-      category: "Water Sports",
-      description: "Underwater exploration",
-      status: "active",
-    },
-    { id: "2", name: "Trekking", category: "Adventure", description: "Mountain hiking", status: "active" },
-    { id: "3", name: "Cultural Tours", category: "Cultural", description: "Heritage site visits", status: "active" },
-    { id: "4", name: "Wildlife Safari", category: "Wildlife", description: "Animal watching", status: "active" },
-  ])
-
-  const [trips, setTrips] = useState([
-    {
-      id: "1",
-      title: "Goa Beach Paradise",
-      destination: "Goa",
-      price: 15999,
-      duration: "4 Days 3 Nights",
-      status: "active",
-      image: "/placeholder.svg?height=200&width=300&text=Goa+Beach",
-      rating: 4.5,
-      reviews: 245,
-    },
-    {
-      id: "2",
-      title: "Kerala Backwaters",
-      destination: "Kerala",
-      price: 22999,
-      duration: "6 Days 5 Nights",
-      status: "active",
-      image: "/placeholder.svg?height=200&width=300&text=Kerala+Backwaters",
-      rating: 4.7,
-      reviews: 189,
-    },
-    {
-      id: "3",
-      title: "Rajasthan Royal Tour",
-      destination: "Rajasthan",
-      price: 35999,
-      duration: "8 Days 7 Nights",
-      status: "active",
-      image: "/placeholder.svg?height=200&width=300&text=Rajasthan+Royal",
-      rating: 4.6,
-      reviews: 312,
-    },
-  ])
-
-  const [reviews, setReviews] = useState([
-    {
-      id: "1",
-      customerName: "John Doe",
-      tripName: "Goa Beach Paradise",
-      rating: 5,
-      comment: "Amazing trip! The beaches were beautiful and the service was excellent.",
-      status: "pending",
-      date: "2024-01-15",
-    },
-    {
-      id: "2",
-      customerName: "Jane Smith",
-      tripName: "Kerala Backwaters",
-      rating: 4,
-      comment: "Great experience with wonderful scenery. Highly recommended!",
-      status: "approved",
-      date: "2024-01-14",
-    },
-  ])
-
-  const [blogs, setBlogs] = useState([
-    {
-      id: "1",
-      title: "Top 10 Beaches in Goa",
-      author: "Travel Writer",
-      status: "published",
-      date: "2024-01-15",
-      category: "Beach",
-      excerpt: "Discover the most beautiful beaches in Goa...",
-    },
-    {
-      id: "2",
-      title: "Kerala Backwater Experience",
-      author: "Adventure Guide",
-      status: "draft",
-      date: "2024-01-14",
-      category: "Nature",
-      excerpt: "Experience the serene backwaters of Kerala...",
-    },
-  ])
-
-  const [collaborators, setCollaborators] = useState([
-    {
-      id: "1",
-      name: "John Smith",
-      email: "john@jmttravel.com",
-      role: "Admin",
-      status: "active",
-      lastLogin: "2024-01-15",
-    },
-    {
-      id: "2",
-      name: "Sarah Johnson",
-      email: "sarah@jmttravel.com",
-      role: "Editor",
-      status: "active",
-      lastLogin: "2024-01-14",
-    },
-  ])
-
-  const [leads, setLeads] = useState([
-    {
-      id: "1",
-      name: "Mike Wilson",
-      email: "mike@example.com",
-      phone: "+91 9876543210",
-      destination: "Goa",
-      budget: "15000-25000",
-      status: "new",
-      date: "2024-01-15",
-    },
-    {
-      id: "2",
-      name: "Lisa Brown",
-      email: "lisa@example.com",
-      phone: "+91 9876543211",
-      destination: "Kerala",
-      budget: "20000-30000",
-      status: "contacted",
-      date: "2024-01-14",
-    },
-  ])
+export function AdminProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const adminUserString = localStorage.getItem("jmt_admin_user") // Correct key
-    if (adminUserString) {
-      try {
-        const parsedUser = JSON.parse(adminUserString) as Partial<AdminUser> & { role: string }
-
-        // Ensure permissions array exists and is valid
-        if (!parsedUser.permissions || !Array.isArray(parsedUser.permissions)) {
-          if (parsedUser.role === "super_admin") {
-            parsedUser.permissions = Object.values(PERMISSIONS) as PermissionValue[]
-          } else {
-            parsedUser.permissions = (ROLES_PERMISSIONS[parsedUser.role] || []) as PermissionValue[]
-          }
-        }
-        // Ensure all fields of AdminUser are present
-        setUser({
-          username: parsedUser.username || "Unknown User",
-          role: parsedUser.role,
-          permissions: parsedUser.permissions as PermissionValue[],
-        })
-      } catch (e) {
-        console.error("Failed to parse admin user from localStorage", e)
-        localStorage.removeItem("jmt_admin_user")
-      }
+    // Check for existing token on mount
+    const savedToken = localStorage.getItem("admin-token") || getCookie("admin-token")
+    if (savedToken) {
+      setToken(savedToken)
+      verifyToken(savedToken)
+    } else {
+      setIsLoading(false)
     }
   }, [])
 
-  return (
-    <AdminContext.Provider
-      value={{
-        sidebarOpen,
-        setSidebarOpen,
-        user,
-        destinations,
-        setDestinations,
-        tripTypes,
-        setTripTypes,
-        activities,
-        setActivities,
-        trips,
-        setTrips,
-        reviews,
-        setReviews,
-        blogs,
-        setBlogs,
-        collaborators,
-        setCollaborators,
-        leads,
-        setLeads,
-      }}
-    >
-      {children}
-    </AdminContext.Provider>
-  )
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop()?.split(";").shift()
+    return null
+  }
+
+  const verifyToken = async (tokenToVerify: string) => {
+    try {
+      const response = await fetch("/api/admin/auth/verify", {
+        headers: {
+          Authorization: `Bearer ${tokenToVerify}`,
+        },
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+        setToken(tokenToVerify)
+        localStorage.setItem("admin-token", tokenToVerify)
+      } else {
+        // Token is invalid, clear it
+        localStorage.removeItem("admin-token")
+        document.cookie = "admin-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+        setToken(null)
+        setUser(null)
+      }
+    } catch (error) {
+      console.error("Token verification failed:", error)
+      localStorage.removeItem("admin-token")
+      setToken(null)
+      setUser(null)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const login = async (email: string, password: string): Promise<boolean> => {
+    try {
+      const response = await fetch("/api/admin/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        setUser(data.user)
+        setToken(data.token)
+        localStorage.setItem("admin-token", data.token)
+        return true
+      } else {
+        const errorData = await response.json()
+        console.error("Login failed:", errorData.message)
+        return false
+      }
+    } catch (error) {
+      console.error("Login error:", error)
+      return false
+    }
+  }
+
+  const logout = () => {
+    setUser(null)
+    setToken(null)
+    localStorage.removeItem("admin-token")
+    document.cookie = "admin-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    document.cookie = "jmt_admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    window.location.href = "/admin"
+  }
+
+  const apiCall = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const headers = {
+      "Content-Type": "application/json",
+      ...options.headers,
+    }
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    return fetch(url, {
+      ...options,
+      headers,
+    })
+  }
+
+  const value: AdminContextType = {
+    user,
+    token,
+    login,
+    logout,
+    isLoading,
+    apiCall,
+  }
+
+  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
 }
 
 export function useAdmin() {

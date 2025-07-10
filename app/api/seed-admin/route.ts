@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function POST() {
   try {
@@ -13,35 +13,33 @@ export async function POST() {
       return NextResponse.json({ message: "Admin user already exists" })
     }
 
-    // Create admin user
+    // Hash password
     const hashedPassword = await bcrypt.hash("admin123", 12)
 
+    // Create admin user
     const adminUser = {
       email: "admin@jmttravel.com",
       password: hashedPassword,
       role: "super_admin",
       permissions: [
-        "manage_users",
-        "manage_destinations",
         "manage_trips",
+        "manage_destinations",
         "manage_hotels",
         "manage_transfers",
-        "manage_rentals",
+        "manage_users",
         "manage_reviews",
         "manage_blogs",
-        "manage_partners",
+        "manage_activities",
         "view_analytics",
-        "approve_listings",
       ],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
-    const result = await db.collection("users").insertOne(adminUser)
+    await db.collection("users").insertOne(adminUser)
 
     return NextResponse.json({
       message: "Admin user created successfully",
-      userId: result.insertedId,
       credentials: {
         email: "admin@jmttravel.com",
         password: "admin123",
@@ -49,6 +47,6 @@ export async function POST() {
     })
   } catch (error) {
     console.error("Error creating admin user:", error)
-    return NextResponse.json({ message: "Failed to create admin user", error: error.message }, { status: 500 })
+    return NextResponse.json({ message: "Error creating admin user" }, { status: 500 })
   }
 }
