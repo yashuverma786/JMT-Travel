@@ -1,12 +1,26 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { getAuthenticatedUser } from "@/lib/auth-middleware"
+import { NextResponse, type NextRequest } from "next/server"
+import jwt from "jsonwebtoken"
+import { connectToDatabase } from "@/lib/mongodb"
+import { ObjectId } from "mongodb"
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request)
+    const authHeader = request.headers.get("authorization")
+    const bearerToken = authHeader?.replace("Bearer ", "")
+    const cookieToken = request.cookies.get("admin-token")?.value
+
+    const token = bearerToken || cookieToken
+
+    if (!token) {
+      return NextResponse.json({ message: "No token provided" }, { status: 401 })
+    }
+
+    const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret")
+    const { db } = await connectToDatabase()
+    const user = await db.collection("users").findOne({ _id: new ObjectId(decoded.userId) })
 
     if (!user) {
-      return NextResponse.json({ message: "Not authenticated" }, { status: 401 })
+      return NextResponse.json({ message: "User not found" }, { status: 401 })
     }
 
     return NextResponse.json({
@@ -18,7 +32,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("Verify error:", error)
-    return NextResponse.json({ message: "Authentication error" }, { status: 500 })
+    console.error("Token verification error:", error)
+    return NextResponse.json({ message: "Invalid token" }, { status: 401 })
   }
 }

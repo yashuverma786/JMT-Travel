@@ -1,41 +1,16 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { checkPermissions } from "@/lib/auth-middleware"
 import { connectToDatabase } from "@/lib/mongodb"
+import { checkPermissions } from "@/lib/auth-middleware"
+import { ObjectId } from "mongodb"
 
 export async function GET(request: NextRequest) {
-  const permissionError = await checkPermissions(request, ["manage_trips"])
-  if (permissionError) return permissionError
+  const authCheck = await checkPermissions(request, ["manage_trips"])
+  if (authCheck) return authCheck
 
   try {
     const { db } = await connectToDatabase()
 
-    // Get trips with destination names
-    const trips = await db
-      .collection("trips")
-      .aggregate([
-        {
-          $lookup: {
-            from: "destinations",
-            localField: "destinationId",
-            foreignField: "_id",
-            as: "destination",
-          },
-        },
-        {
-          $addFields: {
-            destinationName: { $arrayElemAt: ["$destination.name", 0] },
-          },
-        },
-        {
-          $project: {
-            destination: 0,
-          },
-        },
-        {
-          $sort: { createdAt: -1 },
-        },
-      ])
-      .toArray()
+    const trips = await db.collection("trips").find({}).sort({ createdAt: -1 }).toArray()
 
     return NextResponse.json(trips)
   } catch (error) {
@@ -45,66 +20,36 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const permissionError = await checkPermissions(request, ["manage_trips"])
-  if (permissionError) return permissionError
+  const authCheck = await checkPermissions(request, ["manage_trips"])
+  if (authCheck) return authCheck
 
   try {
-    const data = await request.json()
+    const tripData = await request.json()
     const { db } = await connectToDatabase()
 
-    // Convert destinationId to ObjectId if it's a string
-    const { ObjectId } = require("mongodb")
-    if (data.destinationId && typeof data.destinationId === "string") {
-      data.destinationId = new ObjectId(data.destinationId)
+    // Validate required fields
+    if (!tripData.title || !tripData.destinationId || !tripData.adultPrice) {
+      return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
 
-    const tripData = {
-      ...data,
-      adultPrice: Number.parseFloat(data.adultPrice) || 0,
-      salePrice: Number.parseFloat(data.salePrice) || 0,
-      childPrice: Number.parseFloat(data.childPrice) || 0,
-      durationDays: Number.parseInt(data.durationDays) || 0,
-      durationNights: Number.parseInt(data.durationNights) || 0,
-      minPax: Number.parseInt(data.minPax) || 1,
-      maxPax: Number.parseInt(data.maxPax) || 10,
-      highlights: Array.isArray(data.highlights) ? data.highlights.filter((h) => h.trim()) : [],
-      inclusions: Array.isArray(data.inclusions) ? data.inclusions.filter((i) => i.trim()) : [],
-      exclusions: Array.isArray(data.exclusions) ? data.exclusions.filter((e) => e.trim()) : [],
-      itinerary: Array.isArray(data.itinerary) ? data.itinerary : [],
-      galleryImages: Array.isArray(data.galleryImages) ? data.galleryImages : [],
+    // Get destination name
+    const destination = await db.collection("destinations").findOne({ _id: new ObjectId(tripData.destinationId) })
+
+    const newTrip = {
+      ...tripData,
+      destinationName: destination?.name || "Unknown",
+      adultPrice: Number(tripData.adultPrice),
+      salePrice: Number(tripData.salePrice || tripData.adultPrice),
+      durationDays: Number(tripData.durationDays),
+      durationNights: Number(tripData.durationNights),
       createdAt: new Date(),
       updatedAt: new Date(),
     }
 
-    const result = await db.collection("trips").insertOne(tripData)
+    const result = await db.collection("trips").insertOne(newTrip)
+    const createdTrip = await db.collection("trips").findOne({ _id: result.insertedId })
 
-    // Return the created trip with destination name
-    const createdTrip = await db
-      .collection("trips")
-      .aggregate([
-        { $match: { _id: result.insertedId } },
-        {
-          $lookup: {
-            from: "destinations",
-            localField: "destinationId",
-            foreignField: "_id",
-            as: "destination",
-          },
-        },
-        {
-          $addFields: {
-            destinationName: { $arrayElemAt: ["$destination.name", 0] },
-          },
-        },
-        {
-          $project: {
-            destination: 0,
-          },
-        },
-      ])
-      .toArray()
-
-    return NextResponse.json(createdTrip[0], { status: 201 })
+    return NextResponse.json(createdTrip, { status: 201 })
   } catch (error) {
     console.error("Error creating trip:", error)
     return NextResponse.json({ message: "Error creating trip" }, { status: 500 })

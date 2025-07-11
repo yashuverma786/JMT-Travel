@@ -13,7 +13,7 @@ interface User {
 interface AdminContextType {
   user: User | null
   token: string | null
-  login: (email: string, password: string) => Promise<boolean>
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
   logout: () => void
   isLoading: boolean
   apiCall: (url: string, options?: RequestInit) => Promise<Response>
@@ -74,7 +74,7 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       const response = await fetch("/api/admin/auth/login", {
         method: "POST",
@@ -84,20 +84,19 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({ email, password }),
       })
 
+      const data = await response.json()
+
       if (response.ok) {
-        const data = await response.json()
         setUser(data.user)
         setToken(data.token)
         localStorage.setItem("admin-token", data.token)
-        return true
+        return { success: true }
       } else {
-        const errorData = await response.json()
-        console.error("Login failed:", errorData.message)
-        return false
+        return { success: false, message: data.message || "Login failed" }
       }
     } catch (error) {
       console.error("Login error:", error)
-      return false
+      return { success: false, message: "Network error occurred" }
     }
   }
 
@@ -106,7 +105,6 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     setToken(null)
     localStorage.removeItem("admin-token")
     document.cookie = "admin-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
-    document.cookie = "jmt_admin_auth=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
     window.location.href = "/admin"
   }
 

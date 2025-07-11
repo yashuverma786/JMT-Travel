@@ -7,14 +7,17 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
+    console.log("Login attempt for:", email)
+
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
 
-    // Find user in the users collection (not admin_users)
+    // Find user in the users collection
     const user = await db.collection("users").findOne({ email })
+    console.log("User found:", user ? "Yes" : "No")
 
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
@@ -22,6 +25,8 @@ export async function POST(request: NextRequest) {
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password)
+    console.log("Password valid:", isValidPassword)
+
     if (!isValidPassword) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
@@ -55,18 +60,12 @@ export async function POST(request: NextRequest) {
     })
 
     // Set HTTP-only cookie
-    response.cookies.set("jmt_admin_auth", "true", {
-      httpOnly: false,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 24 hours
-    })
-
     response.cookies.set("admin-token", token, {
       httpOnly: false,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: 24 * 60 * 60, // 24 hours
+      path: "/",
     })
 
     return response

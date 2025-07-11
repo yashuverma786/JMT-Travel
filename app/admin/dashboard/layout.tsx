@@ -1,11 +1,12 @@
 "use client"
 
 import type React from "react"
+
 import { useEffect } from "react"
-import { useRouter, usePathname } from "next/navigation"
-import { AdminNavbar } from "@/components/admin/admin-navbar"
-import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { useRouter } from "next/navigation"
 import { useAdmin } from "@/components/admin/admin-context"
+import AdminSidebar from "@/components/admin/admin-sidebar"
+import AdminNavbar from "@/components/admin/admin-navbar"
 
 export default function AdminDashboardLayout({
   children,
@@ -14,7 +15,6 @@ export default function AdminDashboardLayout({
 }) {
   const { user, isLoading } = useAdmin()
   const router = useRouter()
-  const pathname = usePathname()
 
   useEffect(() => {
     if (!isLoading && !user) {

@@ -43,7 +43,11 @@ export default function AdminLayout({
 
   // Login page - no auth check needed
   if (pathname === "/admin") {
-    return <AdminProvider>{children}</AdminProvider>
+    return (
+      <AdminProvider>
+        <div className="min-h-screen bg-gray-50">{children}</div>
+      </AdminProvider>
+    )
   }
 
   // Dashboard routes - check auth
@@ -60,9 +64,17 @@ export default function AdminLayout({
       return null // Will redirect to login
     }
 
-    return <AdminProvider>{children}</AdminProvider>
+    return (
+      <AdminProvider>
+        <div className="min-h-screen bg-gray-50">{children}</div>
+      </AdminProvider>
+    )
   }
 
   // Other admin routes
-  return <AdminProvider>{children}</AdminProvider>
+  return (
+    <AdminProvider>
+      <div className="min-h-screen bg-gray-50">{children}</div>
+    </AdminProvider>
+  )
 }

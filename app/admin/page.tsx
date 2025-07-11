@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -12,11 +11,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAdmin } from "@/components/admin/admin-context"
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("admin@jmttravel.com")
+  const [password, setPassword] = useState("admin123")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { login, user } = useAdmin()
+  const { login, user, isLoading: contextLoading } = useAdmin()
   const router = useRouter()
 
   useEffect(() => {
@@ -31,17 +30,39 @@ export default function AdminLogin() {
     setIsLoading(true)
 
     try {
-      const success = await login(email, password)
-      if (success) {
+      const result = await login(email, password)
+      if (result.success) {
         router.push("/admin/dashboard")
       } else {
-        setError("Invalid email or password")
+        setError(result.message || "Login failed")
       }
     } catch (error) {
       setError("Login failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const createAdminUser = async () => {
+    try {
+      const response = await fetch("/api/seed-admin", { method: "POST" })
+      const data = await response.json()
+      if (data.success) {
+        alert("Admin user created successfully! You can now login.")
+      } else {
+        alert("Error creating admin user: " + data.message)
+      }
+    } catch (error) {
+      alert("Error creating admin user")
+    }
+  }
+
+  if (contextLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   if (user) {
@@ -96,14 +117,20 @@ export default function AdminLogin() {
             </Button>
           </form>
 
-          <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800">
-              <strong>Demo Credentials:</strong>
-              <br />
-              Email: admin@jmttravel.com
-              <br />
-              Password: admin123
-            </p>
+          <div className="mt-4 space-y-3">
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Demo Credentials:</strong>
+                <br />
+                Email: admin@jmttravel.com
+                <br />
+                Password: admin123
+              </p>
+            </div>
+
+            <Button variant="outline" className="w-full bg-transparent" onClick={createAdminUser} type="button">
+              Create Admin User (First Time Setup)
+            </Button>
           </div>
         </CardContent>
       </Card>
