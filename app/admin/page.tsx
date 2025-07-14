@@ -11,8 +11,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useAdmin } from "@/components/admin/admin-context"
 
 export default function AdminLogin() {
-  const [email, setEmail] = useState("admin@jmttravel.com")
-  const [password, setPassword] = useState("admin123")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { login, user, isLoading: contextLoading } = useAdmin()
@@ -116,22 +116,6 @@ export default function AdminLogin() {
               {isLoading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
-
-          <div className="mt-4 space-y-3">
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Demo Credentials:</strong>
-                <br />
-                Email: admin@jmttravel.com
-                <br />
-                Password: admin123
-              </p>
-            </div>
-
-            <Button variant="outline" className="w-full bg-transparent" onClick={createAdminUser} type="button">
-              Create Admin User (First Time Setup)
-            </Button>
-          </div>
         </CardContent>
       </Card>
     </div>

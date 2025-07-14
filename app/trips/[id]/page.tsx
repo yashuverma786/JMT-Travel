@@ -21,6 +21,7 @@ import {
   Share2,
 } from "lucide-react"
 import { useState, useEffect } from "react"
+import jsPDF from "jspdf"
 
 export default function TripDetailPage({ params }: { params: { id: string } }) {
   const [trip, setTrip] = useState<any>(null)
@@ -69,9 +70,103 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
     window.open("tel:9312540202", "_self")
   }
 
-  const handleDownloadBrochure = () => {
-    // Generate PDF download - you can implement PDF generation here
-    alert("PDF brochure download will be implemented with a PDF generation library")
+  const handleDownloadBrochure = async () => {
+    const doc = new jsPDF("p", "pt", "a4")
+    const margin = 40
+    const pageWidth = doc.internal.pageSize.getWidth()
+    const pageHeight = doc.internal.pageSize.getHeight()
+    const contentWidth = pageWidth - margin * 2
+    let y = margin
+
+    // Helper to add text and manage y position
+    const addText = (text: string, options: any, isTitle = false) => {
+      if (y + (options.fontSize || 10) > pageHeight - margin) {
+        doc.addPage()
+        y = margin
+        if (isTitle) addHeader()
+      }
+      const splitText = doc.splitTextToSize(text, contentWidth)
+      doc.setFont(options.font || "helvetica", options.fontStyle || "normal")
+      doc.setFontSize(options.fontSize || 10)
+      doc.setTextColor(options.color || "#000000")
+      doc.text(splitText, margin, y)
+      y += doc.getTextDimensions(splitText).h + (options.spacing || 10)
+    }
+
+    // Helper to add header on each page
+    const addHeader = () => {
+      doc.setFontSize(10)
+      doc.setTextColor("#888888")
+      doc.text("JMT Travel - Your Adventure Awaits", margin, 20)
+      doc.line(margin, 25, pageWidth - margin, 25)
+    }
+
+    // --- PDF Content ---
+    addHeader()
+    y = 60 // Reset y after header
+
+    // Title
+    addText(trip.title, { fontSize: 24, fontStyle: "bold", spacing: 20 }, true)
+
+    // Main Image
+    if (trip.imageUrls?.[0]) {
+      try {
+        const response = await fetch(trip.imageUrls[0])
+        const blob = await response.blob()
+        const reader = new FileReader()
+        await new Promise((resolve, reject) => {
+          reader.onload = resolve
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+        const imgData = reader.result as string
+        if (y + 150 > pageHeight - margin) {
+          doc.addPage()
+          y = margin
+          addHeader()
+        }
+        doc.addImage(imgData, "JPEG", margin, y, contentWidth, 150)
+        y += 160
+      } catch (e) {
+        console.error("Error adding image to PDF", e)
+      }
+    }
+
+    // Overview
+    addText("Overview", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
+    addText(trip.overview, { fontSize: 10, color: "#333333" })
+
+    // Itinerary
+    if (trip.itinerary?.length > 0) {
+      addText("Day-wise Itinerary", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
+      trip.itinerary.forEach((day: any) => {
+        addText(`Day ${day.day}: ${day.title}`, { fontSize: 12, fontStyle: "bold", spacing: 8 })
+        addText(day.description, { fontSize: 10, color: "#333333" })
+      })
+    }
+
+    // Inclusions & Exclusions
+    if (trip.inclusions?.length > 0) {
+      addText("Inclusions", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
+      trip.inclusions.forEach((item: string) => addText(`• ${item}`, { fontSize: 10, color: "#333333", spacing: 5 }))
+      y += 10
+    }
+    if (trip.exclusions?.length > 0) {
+      addText("Exclusions", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
+      trip.exclusions.forEach((item: string) => addText(`• ${item}`, { fontSize: 10, color: "#333333", spacing: 5 }))
+      y += 10
+    }
+
+    // Footer with contact info and link
+    const finalY = pageHeight - margin - 20
+    doc.line(margin, finalY - 10, pageWidth - margin, finalY - 10)
+    doc.setFontSize(10)
+    doc.setTextColor("#0000FF")
+    doc.textWithLink("Book this trip online", margin, finalY, { url: window.location.href })
+    doc.setTextColor("#333333")
+    doc.text("Contact us: 9312540202", pageWidth - margin, finalY, { align: "right" })
+
+    doc.save(`${trip.title.replace(/ /g, "_")}_Brochure.pdf`)
   }
 
   const handleShare = () => {
