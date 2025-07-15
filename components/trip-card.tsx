@@ -1,56 +1,97 @@
-// This is a new, simplified example. You'll need to adapt this to your existing trip card structure.
-// Or modify your existing trip card component (e.g., within featured-packages.tsx or similar)
-import Image from "next/image"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge" // Assuming you have a Badge component
+import Image from "next/image"
+import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Clock, MapPin, Star } from "lucide-react"
 
-interface TripCardProps {
-  trip: {
-    _id: string
-    title: string
-    imageUrls: string[] // Assuming imageUrls is an array
-    price: number
-    salePrice?: number | null
-    destinationName?: string // If you pass destination name
-    durationDays?: number
-    // ... other relevant trip properties
-  }
+export interface Trip {
+  _id: string
+  title: string
+  destinationName: string
+  durationDays: number
+  imageUrls: string[]
+  normalPrice?: number
+  salePrice?: number
+  rating?: number
+  category?: string
+  overview: string
 }
 
-export default function TripCard({ trip }: TripCardProps) {
-  const displayPrice = trip.salePrice && trip.salePrice < trip.price ? trip.salePrice : trip.price
-  const originalPrice = trip.price
-  const isOnSale = trip.salePrice && trip.salePrice < trip.price
-  let discountPercentage = 0
-  if (isOnSale && trip.salePrice) {
-    discountPercentage = Math.round(((originalPrice - trip.salePrice) / originalPrice) * 100)
-  }
+export default function TripCard({ trip }: { trip: Trip }) {
+  const hasDiscount =
+    typeof trip.salePrice === "number" && typeof trip.normalPrice === "number" && trip.salePrice < trip.normalPrice
+  const displayPrice = hasDiscount ? trip.salePrice : trip.normalPrice
+  const discountPercentage = hasDiscount
+    ? Math.round(((trip.normalPrice! - trip.salePrice!) / trip.normalPrice!) * 100)
+    : 0
 
   return (
-    <div className="border rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
-      <Link href={`/trips/${trip._id}`} className="block">
+    <Card className="overflow-hidden hover:shadow-lg transition-shadow group flex flex-col">
+      <Link href={`/trips/${trip._id}`} className="flex-grow">
         <div className="relative">
           <Image
-            src={trip.imageUrls?.[0] || "/placeholder.svg?width=400&height=250&query=beautiful+travel+destination"}
+            src={trip.imageUrls?.[0] || "/placeholder.svg?height=200&width=300&query=trip"}
             alt={trip.title}
-            width={400}
-            height={250}
-            className="w-full h-48 object-cover"
+            width={300}
+            height={200}
+            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          {isOnSale && discountPercentage > 0 && (
-            <Badge className="absolute top-2 right-2 bg-red-500 text-white">{discountPercentage}% OFF</Badge>
+          {hasDiscount && (
+            <Badge className="absolute top-2 left-2 bg-red-500 text-white">{discountPercentage}% OFF</Badge>
           )}
+          {trip.category && <Badge className="absolute top-2 right-2 bg-blue-500 text-white">{trip.category}</Badge>}
         </div>
-        <div className="p-4">
-          <h3 className="text-lg font-semibold mb-1 truncate">{trip.title}</h3>
-          {trip.destinationName && <p className="text-sm text-gray-600 mb-2">{trip.destinationName}</p>}
-          <div className="flex items-baseline mb-2">
-            <p className="text-xl font-bold text-primary mr-2">₹{displayPrice.toLocaleString()}</p>
-            {isOnSale && <p className="text-sm text-gray-500 line-through">₹{originalPrice.toLocaleString()}</p>}
+
+        <CardContent className="p-4 flex-grow flex flex-col justify-between">
+          <div className="space-y-3">
+            <div>
+              <h3 className="font-semibold text-lg line-clamp-2 h-14">{trip.title}</h3>
+              <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-4 w-4" />
+                  <span>{trip.destinationName}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  <span>{trip.durationDays} Days</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              {typeof trip.rating === "number" && trip.rating > 0 && (
+                <div className="flex items-center gap-1">
+                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                  <span>{trip.rating}</span>
+                </div>
+              )}
+            </div>
           </div>
-          {trip.durationDays && <p className="text-xs text-gray-500">{trip.durationDays} Days</p>}
-        </div>
+        </CardContent>
       </Link>
-    </div>
+      <div className="p-4 pt-0 mt-auto">
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div>
+            {typeof displayPrice === "number" ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-bold">₹{displayPrice.toLocaleString("en-IN")}</span>
+                {hasDiscount && typeof trip.normalPrice === "number" && (
+                  <span className="text-sm text-gray-500 line-through">
+                    ₹{trip.normalPrice.toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span className="text-lg font-bold text-blue-600">Price on request</span>
+            )}
+            <span className="text-xs text-gray-500">per person</span>
+          </div>
+          <Button size="sm" className="bg-orange-500 hover:bg-orange-600" asChild>
+            <Link href={`/trips/${trip._id}`}>View Details</Link>
+          </Button>
+        </div>
+      </div>
+    </Card>
   )
 }

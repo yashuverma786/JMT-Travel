@@ -60,10 +60,11 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
     notFound()
   }
 
-  const hasDiscount = trip.salePrice && trip.salePrice > 0 && trip.salePrice < trip.normalPrice
+  const hasDiscount =
+    typeof trip.salePrice === "number" && typeof trip.normalPrice === "number" && trip.salePrice < trip.normalPrice
   const displayPrice = hasDiscount ? trip.salePrice : trip.normalPrice
   const discountPercentage = hasDiscount
-    ? Math.round(((trip.normalPrice - trip.salePrice) / trip.normalPrice) * 100)
+    ? Math.round(((trip.normalPrice! - trip.salePrice!) / trip.normalPrice!) * 100)
     : 0
 
   const handleCallNow = () => {
@@ -78,7 +79,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
     const contentWidth = pageWidth - margin * 2
     let y = margin
 
-    // Helper to add text and manage y position
     const addText = (text: string, options: any, isTitle = false) => {
       if (y + (options.fontSize || 10) > pageHeight - margin) {
         doc.addPage()
@@ -93,7 +93,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       y += doc.getTextDimensions(splitText).h + (options.spacing || 10)
     }
 
-    // Helper to add header on each page
     const addHeader = () => {
       doc.setFontSize(10)
       doc.setTextColor("#888888")
@@ -101,14 +100,11 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       doc.line(margin, 25, pageWidth - margin, 25)
     }
 
-    // --- PDF Content ---
     addHeader()
-    y = 60 // Reset y after header
+    y = 60
 
-    // Title
     addText(trip.title, { fontSize: 24, fontStyle: "bold", spacing: 20 }, true)
 
-    // Main Image
     if (trip.imageUrls?.[0]) {
       try {
         const response = await fetch(trip.imageUrls[0])
@@ -132,11 +128,9 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       }
     }
 
-    // Overview
     addText("Overview", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
     addText(trip.overview, { fontSize: 10, color: "#333333" })
 
-    // Itinerary
     if (trip.itinerary?.length > 0) {
       addText("Day-wise Itinerary", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
       trip.itinerary.forEach((day: any) => {
@@ -145,7 +139,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       })
     }
 
-    // Inclusions & Exclusions
     if (trip.inclusions?.length > 0) {
       addText("Inclusions", { fontSize: 16, fontStyle: "bold", spacing: 15 }, true)
       trip.inclusions.forEach((item: string) => addText(`• ${item}`, { fontSize: 10, color: "#333333", spacing: 5 }))
@@ -157,7 +150,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       y += 10
     }
 
-    // Footer with contact info and link
     const finalY = pageHeight - margin - 20
     doc.line(margin, finalY - 10, pageWidth - margin, finalY - 10)
     doc.setFontSize(10)
@@ -184,7 +176,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section */}
       <div className="relative h-96 overflow-hidden">
         <Image
           src={trip.imageUrls?.[0] || "/placeholder.svg?height=400&width=800&query=travel+destination"}
@@ -217,7 +208,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
       </div>
 
       <div className="container py-8">
-        {/* Back Button */}
         <div className="mb-6">
           <Button variant="outline" asChild>
             <Link href="/trips" className="flex items-center gap-2">
@@ -228,9 +218,7 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Overview */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
@@ -246,7 +234,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
               </CardContent>
             </Card>
 
-            {/* Inclusions & Exclusions */}
             {(trip.inclusions?.length > 0 || trip.exclusions?.length > 0) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {trip.inclusions?.length > 0 && (
@@ -287,7 +274,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
               </div>
             )}
 
-            {/* Itinerary */}
             {trip.itinerary?.length > 0 && (
               <Card>
                 <CardHeader>
@@ -312,9 +298,7 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
             )}
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Booking Card */}
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle>Book This Trip</CardTitle>
@@ -322,12 +306,22 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
               <CardContent className="space-y-6">
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    {hasDiscount && (
-                      <span className="text-lg text-gray-500 line-through">₹{trip.normalPrice.toLocaleString()}</span>
+                    {typeof displayPrice === "number" ? (
+                      <>
+                        {hasDiscount && typeof trip.normalPrice === "number" && (
+                          <span className="text-lg text-gray-500 line-through">
+                            ₹{trip.normalPrice.toLocaleString("en-IN")}
+                          </span>
+                        )}
+                        <span className="text-3xl font-bold text-blue-600">
+                          ₹{displayPrice.toLocaleString("en-IN")}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-2xl font-bold text-blue-600">Price on request</span>
                     )}
-                    <span className="text-3xl font-bold text-blue-600">₹{displayPrice.toLocaleString()}</span>
                   </div>
-                  <p className="text-sm text-gray-500">per person</p>
+                  {typeof displayPrice === "number" && <p className="text-sm text-gray-500">per person</p>}
                   {hasDiscount && <Badge className="bg-red-500 text-white mt-2">Save {discountPercentage}%</Badge>}
                 </div>
 
@@ -387,7 +381,6 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
               </CardContent>
             </Card>
 
-            {/* Quick Info */}
             <Card>
               <CardHeader>
                 <CardTitle>Trip Information</CardTitle>
