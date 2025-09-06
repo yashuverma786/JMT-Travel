@@ -2,114 +2,139 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Phone, Mail, User } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-const navItems = [
-  { name: "Destinations", href: "/destinations" },
-  { name: "Trips", href: "/trips" },
-  { name: "Trip Types", href: "/trip-types" },
-  { name: "Activities", href: "/activities" },
-  { name: "Hotels", href: "/hotels" },
-  { name: "Transfers", href: "/transfers" },
-  { name: "Blog", href: "/blog" },
-]
+import { Input } from "@/components/ui/input"
+import { Menu, Search, X, Phone, Mail } from "lucide-react"
 
 export default function Header() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const pathname = usePathname()
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen)
+  const toggleSearch = () => setIsSearchOpen(!isSearchOpen)
 
   return (
-    <header className="bg-white border-b shadow-sm sticky top-0 z-40">
+    <header className="bg-white shadow-md sticky top-0 z-50">
       {/* Top bar */}
-      <div className="bg-blue-600 text-white py-2 text-sm">
-        <div className="container flex justify-between items-center px-4 sm:px-6">
-          <div className="flex items-center gap-2 sm:gap-4">
-            <div className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              <span className="text-xs sm:text-sm">+91-9312540202</span>
+      <div className="bg-blue-600 text-white py-2 px-4">
+        <div className="container mx-auto flex justify-between items-center text-sm">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center">
+              <Phone className="h-4 w-4 mr-1" />
+              <span>+91 9876543210</span>
             </div>
-            <div className="hidden sm:flex items-center gap-1">
-              <Mail className="h-3 w-3" />
-              <span className="text-xs sm:text-sm">support@jmttravel.com</span>
+            <div className="flex items-center">
+              <Mail className="h-4 w-4 mr-1" />
+              <span>info@jmttravel.com</span>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-4">
-            <Link href="/login" className="flex items-center gap-1 hover:underline text-xs sm:text-sm">
-              <User className="h-3 w-3" />
-              <span>Login/Register</span>
-            </Link>
+          <div className="hidden md:block">
+            <span>Best Travel Experience Since 2010</span>
           </div>
         </div>
       </div>
 
       {/* Main header */}
-      <div className="container flex h-16 items-center justify-between px-4 sm:px-6">
-        <Link href="/" className="flex items-center">
-          <span className="text-xl sm:text-2xl font-bold text-blue-600">JMT Travel</span>
-        </Link>
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2">
+            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-lg">JMT</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold text-gray-800">JMT Travel</h1>
+              <p className="text-xs text-gray-600">Your Journey Matters</p>
+            </div>
+          </Link>
 
-        <nav className="hidden md:flex items-center space-x-6 lg:space-x-8">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "text-sm font-medium transition-colors hover:text-blue-600 relative group py-2",
-                pathname === item.href ? "text-blue-600" : "text-gray-700",
-              )}
-            >
-              {item.name}
-              <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-blue-600 transition-all duration-300 group-hover:w-full"></span>
+          {/* Desktop Navigation */}
+          <nav className="hidden lg:flex items-center space-x-8">
+            <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Home
             </Link>
-          ))}
-        </nav>
-
-        <Button
-          variant="ghost"
-          size="icon"
-          className="md:hidden min-h-[44px] min-w-[44px]"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle mobile menu"
-        >
-          {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </Button>
-      </div>
-
-      {/* Mobile menu */}
-      <div
-        className={cn(
-          "md:hidden border-t bg-white transition-all duration-300 ease-in-out overflow-hidden",
-          mobileMenuOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
-        )}
-      >
-        <nav className="container py-4 space-y-2 px-4 sm:px-6">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={cn(
-                "block px-3 py-3 text-base font-medium transition-colors hover:text-blue-600 rounded-md min-h-[44px] flex items-center",
-                pathname === item.href ? "text-blue-600 bg-blue-50" : "text-gray-700",
-              )}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              {item.name}
+            <Link href="/destinations" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Destinations
             </Link>
-          ))}
-          <div className="pt-4 border-t">
-            <Link
-              href="/login"
-              className="flex items-center gap-2 px-3 py-3 text-base font-medium text-gray-700 hover:text-blue-600 rounded-md min-h-[44px]"
-              onClick={() => setMobileMenuOpen(false)}
+            <Link href="/holidays" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Holidays
+            </Link>
+            <Link href="/trip-types" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Trip Types
+            </Link>
+            <Link href="/hotels" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Hotels
+            </Link>
+            <Link href="/transfers" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Transfers
+            </Link>
+            <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
+              Blog
+            </Link>
+          </nav>
+
+          {/* Search and Menu buttons */}
+          <div className="flex items-center space-x-4">
+            <Button variant="ghost" size="sm" onClick={toggleSearch} className="text-gray-700 hover:text-blue-600">
+              <Search className="h-5 w-5" />
+            </Button>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleMenu}
+              className="lg:hidden text-gray-700 hover:text-blue-600"
             >
-              <User className="h-4 w-4" />
-              Login/Register
+              {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
+
+            <Link href="/customize-tour">
+              <Button className="hidden md:inline-flex bg-blue-600 hover:bg-blue-700">Customize Tour</Button>
             </Link>
           </div>
-        </nav>
+        </div>
+
+        {/* Search Bar */}
+        {isSearchOpen && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Input type="text" placeholder="Search destinations, packages, hotels..." className="flex-1" />
+              <Button className="bg-blue-600 hover:bg-blue-700">Search</Button>
+            </div>
+          </div>
+        )}
+
+        {/* Mobile Navigation */}
+        {isMenuOpen && (
+          <div className="lg:hidden mt-4 p-4 bg-gray-50 rounded-lg">
+            <nav className="flex flex-col space-y-4">
+              <Link href="/" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Home
+              </Link>
+              <Link href="/destinations" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Destinations
+              </Link>
+              <Link href="/holidays" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Holidays
+              </Link>
+              <Link href="/trip-types" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Trip Types
+              </Link>
+              <Link href="/hotels" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Hotels
+              </Link>
+              <Link href="/transfers" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Transfers
+              </Link>
+              <Link href="/blog" className="text-gray-700 hover:text-blue-600 transition-colors">
+                Blog
+              </Link>
+              <Link href="/customize-tour">
+                <Button className="w-full bg-blue-600 hover:bg-blue-700">Customize Tour</Button>
+              </Link>
+            </nav>
+          </div>
+        )}
       </div>
     </header>
   )

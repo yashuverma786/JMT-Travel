@@ -1,5 +1,8 @@
 "use client"
 
+import { Button } from "@/components/ui/button"
+import { AlertTriangle } from "lucide-react"
+
 export default function GlobalError({
   error,
   reset,
@@ -11,18 +14,20 @@ export default function GlobalError({
     <html>
       <body>
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">Something went wrong!</h2>
-            <p className="text-gray-600 mb-6">We're sorry, but something unexpected happened.</p>
-            <button onClick={() => reset()} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded mr-4">
-              Try again
-            </button>
-            <button
-              onClick={() => (window.location.href = "/")}
-              className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded"
-            >
-              Go Home
-            </button>
+          <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-6 text-center">
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertTriangle className="h-8 w-8 text-red-600" />
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Application Error</h2>
+            <p className="text-gray-600 mb-6">A critical error occurred. Please try refreshing the page.</p>
+            <div className="space-y-3">
+              <Button onClick={reset} className="w-full">
+                Try again
+              </Button>
+              <Button variant="outline" onClick={() => (window.location.href = "/")} className="w-full">
+                Go to Homepage
+              </Button>
+            </div>
           </div>
         </div>
       </body>

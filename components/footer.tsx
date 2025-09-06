@@ -4,112 +4,159 @@ import { Facebook, Twitter, Instagram, Youtube, Phone, Mail, MapPin } from "luci
 export default function Footer() {
   return (
     <footer className="bg-gray-900 text-white">
-      <div className="container py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          {/* Company Info */}
           <div>
-            <h3 className="text-xl font-bold mb-4">JMT Travel</h3>
-            <p className="text-gray-300 mb-4">
-              Your trusted travel partner for amazing holiday experiences across India and beyond.
+            <div className="flex items-center space-x-2 mb-4">
+              <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center">
+                <span className="text-white font-bold text-lg">JMT</span>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold">JMT Travel</h3>
+                <p className="text-sm text-gray-400">Your Journey Matters</p>
+              </div>
+            </div>
+            <p className="text-gray-400 mb-4">
+              Creating unforgettable travel experiences since 2010. We specialize in customized tours, luxury
+              accommodations, and seamless travel arrangements.
             </p>
             <div className="flex space-x-4">
-              <Link href="#" className="text-gray-300 hover:text-white">
-                <Facebook className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-gray-300 hover:text-white">
-                <Twitter className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-gray-300 hover:text-white">
-                <Instagram className="h-5 w-5" />
-              </Link>
-              <Link href="#" className="text-gray-300 hover:text-white">
-                <Youtube className="h-5 w-5" />
-              </Link>
+              <Facebook className="h-5 w-5 text-gray-400 hover:text-blue-500 cursor-pointer" />
+              <Twitter className="h-5 w-5 text-gray-400 hover:text-blue-400 cursor-pointer" />
+              <Instagram className="h-5 w-5 text-gray-400 hover:text-pink-500 cursor-pointer" />
+              <Youtube className="h-5 w-5 text-gray-400 hover:text-red-500 cursor-pointer" />
             </div>
           </div>
 
+          {/* Quick Links */}
           <div>
-            <h4 className="font-semibold mb-4">Quick Links</h4>
-            <ul className="space-y-2 text-gray-300">
+            <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
+            <ul className="space-y-2">
               <li>
-                <Link href="/holidays" className="hover:text-white">
+                <Link href="/" className="text-gray-400 hover:text-white transition-colors">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/destinations" className="text-gray-400 hover:text-white transition-colors">
+                  Destinations
+                </Link>
+              </li>
+              <li>
+                <Link href="/holidays" className="text-gray-400 hover:text-white transition-colors">
                   Holiday Packages
                 </Link>
               </li>
               <li>
-                <Link href="/hotels" className="hover:text-white">
+                <Link href="/trip-types" className="text-gray-400 hover:text-white transition-colors">
+                  Trip Types
+                </Link>
+              </li>
+              <li>
+                <Link href="/hotels" className="text-gray-400 hover:text-white transition-colors">
                   Hotels
                 </Link>
               </li>
               <li>
-                <Link href="/flights" className="hover:text-white">
-                  Flights
+                <Link href="/transfers" className="text-gray-400 hover:text-white transition-colors">
+                  Transfers
                 </Link>
               </li>
               <li>
-                <Link href="/about" className="hover:text-white">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link href="/contact" className="hover:text-white">
-                  Contact
+                <Link href="/blog" className="text-gray-400 hover:text-white transition-colors">
+                  Travel Blog
                 </Link>
               </li>
             </ul>
           </div>
 
+          {/* Services */}
           <div>
-            <h4 className="font-semibold mb-4">Destinations</h4>
-            <ul className="space-y-2 text-gray-300">
+            <h4 className="text-lg font-semibold mb-4">Our Services</h4>
+            <ul className="space-y-2">
               <li>
-                <Link href="/destinations/goa" className="hover:text-white">
-                  Goa
+                <Link href="/customize-tour" className="text-gray-400 hover:text-white transition-colors">
+                  Custom Tours
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/kerala" className="hover:text-white">
-                  Kerala
+                <Link href="/trip-types/honeymoon" className="text-gray-400 hover:text-white transition-colors">
+                  Honeymoon Packages
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/rajasthan" className="hover:text-white">
-                  Rajasthan
+                <Link href="/trip-types/family" className="text-gray-400 hover:text-white transition-colors">
+                  Family Vacations
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/himachal" className="hover:text-white">
-                  Himachal
+                <Link href="/trip-types/adventure" className="text-gray-400 hover:text-white transition-colors">
+                  Adventure Tours
                 </Link>
               </li>
               <li>
-                <Link href="/destinations/kashmir" className="hover:text-white">
-                  Kashmir
+                <Link href="/trip-types/luxury" className="text-gray-400 hover:text-white transition-colors">
+                  Luxury Travel
+                </Link>
+              </li>
+              <li>
+                <Link href="/trip-types/spiritual" className="text-gray-400 hover:text-white transition-colors">
+                  Spiritual Tours
+                </Link>
+              </li>
+              <li>
+                <Link href="/rentals" className="text-gray-400 hover:text-white transition-colors">
+                  Car Rentals
                 </Link>
               </li>
             </ul>
           </div>
 
+          {/* Contact Info */}
           <div>
-            <h4 className="font-semibold mb-4">Contact Info</h4>
-            <div className="space-y-3 text-gray-300">
-              <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                <span>+91-9312540202</span>
+            <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <MapPin className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-gray-400">123 Travel Street</p>
+                  <p className="text-gray-400">New Delhi, India 110001</p>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4" />
-                <span>support@jmttravel.com</span>
+              <div className="flex items-center space-x-3">
+                <Phone className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-gray-400">+91 9876543210</p>
+                  <p className="text-gray-400">+91 9876543211</p>
+                </div>
               </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="h-4 w-4 mt-1" />
-                <span>D-22 Ground Floor, Sector 3, Noida 201301, UP</span>
+              <div className="flex items-center space-x-3">
+                <Mail className="h-5 w-5 text-blue-500" />
+                <div>
+                  <p className="text-gray-400">info@jmttravel.com</p>
+                  <p className="text-gray-400">support@jmttravel.com</p>
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-          <p>&copy; 2024 JMT Travel. All rights reserved.</p>
+        <div className="border-t border-gray-800 mt-8 pt-8">
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 text-sm">© 2024 JMT Travel. All rights reserved.</p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <Link href="/privacy" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Privacy Policy
+              </Link>
+              <Link href="/terms" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Terms of Service
+              </Link>
+              <Link href="/contact" className="text-gray-400 hover:text-white text-sm transition-colors">
+                Contact
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </footer>

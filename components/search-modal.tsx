@@ -51,6 +51,10 @@ export default function SearchModal() {
   const [activeTab, setActiveTab] = useState("destinations")
   const [isClient, setIsClient] = useState(false)
   const [isOpen, setIsOpen] = useState(false)
+  const [destination, setDestination] = useState("")
+  const [checkIn, setCheckIn] = useState("")
+  const [checkOut, setCheckOut] = useState("")
+  const [guests, setGuests] = useState("2")
 
   useEffect(() => {
     setIsClient(true)
@@ -75,6 +79,7 @@ export default function SearchModal() {
 
   const handleSearch = (e: React.FormEvent, tab: string) => {
     e.preventDefault()
+    console.log({ destination, checkIn, checkOut, guests })
     router.push(`/${tab}`)
     setIsOpen(false)
   }
@@ -238,6 +243,8 @@ export default function SearchModal() {
                                 <Input
                                   placeholder="Goa, Kerala, Rajasthan..."
                                   className="pl-10 h-12 border-2 border-gray-200 hover:border-green-300 focus:border-green-500 transition-all duration-300 rounded-xl text-base"
+                                  value={destination}
+                                  onChange={(e) => setDestination(e.target.value)}
                                 />
                               </div>
                             </div>

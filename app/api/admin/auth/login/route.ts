@@ -15,8 +15,14 @@ export async function POST(request: NextRequest) {
 
     const { db } = await connectToDatabase()
 
-    // Find user in the users collection
-    const user = await db.collection("users").findOne({ email })
+    // Find user in the admin_users collection
+    const user = await db.collection("admin_users").findOne({
+      $or: [
+        { email: email },
+        { username: email }, // Allow login with username as well
+      ],
+    })
+
     console.log("User found:", user ? "Yes" : "No")
 
     if (!user) {
@@ -36,11 +42,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: "Access denied" }, { status: 403 })
     }
 
+    // Update last login
+    await db.collection("admin_users").updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } })
+
     // Generate JWT token
     const token = jwt.sign(
       {
         userId: user._id.toString(),
         email: user.email,
+        username: user.username,
         role: user.role,
       },
       process.env.JWT_SECRET || "fallback-secret",
@@ -53,6 +63,7 @@ export async function POST(request: NextRequest) {
       user: {
         _id: user._id,
         email: user.email,
+        username: user.username,
         role: user.role,
         permissions: user.permissions || [],
       },
