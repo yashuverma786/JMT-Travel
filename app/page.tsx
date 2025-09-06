@@ -1,269 +1,402 @@
-import FilterBar from "@/components/filter-bar"
-import SpecialOffersSection from "@/components/special-offers-section"
-import TrendingDestinations from "@/components/trending-destinations"
-import CustomerReviews from "@/components/customer-reviews"
-import ActivityGrid from "@/components/activity-grid"
-import TravelBlogs from "@/components/travel-blogs"
-import Partners from "@/components/partners"
-import PopularDestinationsCarousel from "@/components/popular-destinations-carousel"
-import InteractiveHolidayPackages from "@/components/interactive-holiday-packages"
-import Testimonials from "@/components/testimonials"
-import FeaturedTripsSection from "@/components/featured-trips-section"
+"use client"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { TrendingUp, Award, Shield, Plane, MapPin, Calendar, Users } from "lucide-react"
-import ClientWrapper from "@/components/client-wrapper"
-import SearchModal from "@/components/search-modal"
+import { Badge } from "@/components/ui/badge"
+import { MapPin, Calendar, TrendingUp, Phone, Mail, Clock, Award, Shield, Heart, Mountain } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
-import type { Metadata } from "next"
+import SearchForm from "@/components/search-form"
+import PopupManager from "@/components/popup-manager"
+import CustomerReviews from "@/components/customer-reviews"
+import Partners from "@/components/partners"
 
-export const metadata: Metadata = {
-  title: "JMT Travel - Holiday Packages & Travel Booking",
-  description:
-    "Book holiday packages, hotels, flights and more with JMT Travel. Best deals on domestic and international travel with 50,000+ happy travelers.",
-  openGraph: {
-    title: "JMT Travel - Holiday Packages & Travel Booking",
-    description:
-      "Book holiday packages, hotels, flights and more with JMT Travel. Best deals on domestic and international travel.",
-    images: ["/og-image.jpg"],
-  },
+interface Destination {
+  _id: string
+  name: string
+  country: string
+  imageUrl: string
+  popular: boolean
+  trending: boolean
+  type: string
 }
 
-const features = [
-  {
-    icon: <TrendingUp className="h-8 w-8 text-blue-600" />,
-    title: "Best Price Guarantee",
-    description: "We offer the best prices on holiday packages",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    icon: <Award className="h-8 w-8 text-green-600" />,
-    title: "Award Winning Service",
-    description: "Recognized for excellence in travel services",
-    gradient: "from-green-500 to-emerald-500",
-  },
-  {
-    icon: <Shield className="h-8 w-8 text-purple-600" />,
-    title: "Secure Booking",
-    description: "100% secure payment and booking process",
-    gradient: "from-purple-500 to-pink-500",
-  },
-]
+interface Trip {
+  _id: string
+  title: string
+  destinationName: string
+  images: string[]
+  adultPrice: number
+  salePrice: number
+  durationDays: number
+  durationNights: number
+  tripType: string
+  isTrending: boolean
+}
 
-const stats = [
-  { icon: <Users className="h-8 w-8" />, number: "50,000+", label: "Happy Travelers" },
-  { icon: <MapPin className="h-8 w-8" />, number: "500+", label: "Destinations" },
-  { icon: <Calendar className="h-8 w-8" />, number: "10+", label: "Years Experience" },
-  { icon: <Plane className="h-8 w-8" />, number: "1000+", label: "Tour Packages" },
-]
+interface TripType {
+  _id: string
+  name: string
+  description: string
+  iconUrl: string
+}
 
-export default function Home() {
+export default function HomePage() {
+  const [destinations, setDestinations] = useState<Destination[]>([])
+  const [trips, setTrips] = useState<Trip[]>([])
+  const [tripTypes, setTripTypes] = useState<TripType[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchAllData()
+  }, [])
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true)
+
+      const [destinationsRes, tripsRes, tripTypesRes] = await Promise.all([
+        fetch("/api/destinations"),
+        fetch("/api/trips?limit=8"),
+        fetch("/api/trip-types"),
+      ])
+
+      const [destinationsData, tripsData, tripTypesData] = await Promise.all([
+        destinationsRes.json(),
+        tripsRes.json(),
+        tripTypesRes.json(),
+      ])
+
+      setDestinations(destinationsData.destinations || [])
+      setTrips(tripsData.trips || [])
+      setTripTypes(tripTypesData.tripTypes || [])
+    } catch (error) {
+      console.error("Error fetching data:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const popularDestinations = destinations.filter((d) => d.popular).slice(0, 6)
+  const trendingTrips = trips.filter((t) => t.isTrending).slice(0, 4)
+  const featuredTrips = trips.slice(0, 8)
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
+      <PopupManager />
+
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-blue-600 via-purple-600 to-blue-800 text-white py-20 overflow-hidden">
-        <div className="absolute inset-0 opacity-30">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-r from-cyan-400 to-blue-400 rounded-full blur-3xl"></div>
-          <div className="absolute top-40 right-32 w-48 h-48 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full blur-2xl"></div>
-          <div className="absolute bottom-32 left-1/3 w-32 h-32 bg-gradient-to-r from-orange-400 to-yellow-400 rounded-full blur-xl"></div>
-        </div>
+      <section className="relative h-screen flex items-center justify-center bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white overflow-hidden">
+        <div className="absolute inset-0 bg-black/30" />
+        <Image
+          src="/diverse-travel-destinations.png"
+          alt="Travel destinations"
+          fill
+          className="object-cover mix-blend-overlay opacity-50"
+          priority
+        />
 
-        <div className="container relative z-10 px-6">
-          <div className="text-center mb-12">
-            <h1 className="text-7xl font-bold mb-6 bg-gradient-to-r from-white to-cyan-200 bg-clip-text text-transparent">
-              Discover Amazing
-              <br />
-              <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-                Holiday Packages
-              </span>
-            </h1>
-            <p className="text-2xl opacity-90 max-w-3xl mx-auto leading-relaxed">
-              Embark on unforgettable journeys with JMT Travel. From serene beaches to majestic mountains, your perfect
-              adventure awaits.
-            </p>
+        <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+          <h1 className="text-4xl md:text-7xl font-bold mb-6 animate-fade-in">
+            Discover Your Next
+            <span className="block text-yellow-400">Adventure</span>
+          </h1>
+          <p className="text-xl md:text-2xl mb-8 opacity-90">
+            Explore incredible destinations with our expertly crafted travel packages
+          </p>
+
+          <div className="flex flex-wrap justify-center gap-4 mb-12">
+            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
+              <Award className="h-4 w-4 mr-2" />
+              Award Winning Service
+            </Badge>
+            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
+              <Shield className="h-4 w-4 mr-2" />
+              100% Safe & Secure
+            </Badge>
+            <Badge className="bg-white/20 text-white border-white/30 px-4 py-2">
+              <Heart className="h-4 w-4 mr-2" />
+              10,000+ Happy Customers
+            </Badge>
           </div>
 
-          <div className="relative mt-12">
-            <ClientWrapper>
-              <SearchModal />
-            </ClientWrapper>
-          </div>
-        </div>
-
-        {/* Wave Animation */}
-        <div className="absolute bottom-0 left-0 w-full overflow-hidden">
-          <svg className="relative block w-full h-20" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path
-              d="M0,0V46.29c47.79,22.2,103.59,32.17,158,28,70.36-5.37,136.33-33.31,206.8-37.5C438.64,32.43,512.34,53.67,583,72.05c69.27,18,138.3,24.88,209.4,13.08,36.15-6,69.85-17.84,104.45-29.34C989.49,25,1113-14.29,1200,52.47V0Z"
-              opacity=".25"
-              fill="currentColor"
-              className="text-gray-50"
-            />
-            <path
-              d="M0,0V15.81C13,36.92,27.64,56.86,47.69,72.05,99.41,111.27,165,111,224.58,91.58c31.15-10.15,60.09-26.07,89.67-39.8,40.92-19,84.73-46,130.83-49.67,36.26-2.85,70.9,9.42,98.6,31.56,31.77,25.39,62.32,62,103.63,73,40.44,10.79,81.35-6.69,119.13-24.28s75.16-39,116.92-43.05c59.73-5.85,113.28,22.88,168.9,38.84,30.2,8.66,59,6.17,87.09-7.5,22.43-10.89,48-26.93,60.65-49.24V0Z"
-              opacity=".5"
-              fill="currentColor"
-              className="text-gray-50"
-            />
-            <path
-              d="M0,0V5.63C149.93,59,314.09,71.32,475.83,42.57c43-7.64,84.23-20.12,127.61-26.46,59-8.63,112.48,12.24,165.56,35.4C827.93,77.22,886,95.24,951.2,90c86.53-7,172.46-45.71,248.8-84.81V0Z"
-              fill="currentColor"
-              className="text-gray-50"
-            />
-          </svg>
+          <SearchForm />
         </div>
       </section>
 
-      {/* Filter Bar */}
-      <ClientWrapper>
-        <FilterBar />
-      </ClientWrapper>
-
-      {/* Stats Section */}
-      <section className="py-16 bg-white relative overflow-hidden">
-        <div className="container relative z-10 px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <Card
-                key={index}
-                className="text-center group hover:shadow-xl transition-all duration-500 hover:-translate-y-3 border-0 bg-gradient-to-br from-white to-gray-50"
-              >
-                <CardContent className="p-6">
-                  <div className="flex justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                    <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full text-white">
-                      {stat.icon}
-                    </div>
-                  </div>
-                  <div className="text-3xl font-bold text-gray-800 mb-2">{stat.number}</div>
-                  <div className="text-base text-gray-600">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Featured Trips Section */}
-      <ClientWrapper>
-        <FeaturedTripsSection />
-      </ClientWrapper>
-
-      {/* Interactive Holiday Packages */}
-      <ClientWrapper>
-        <InteractiveHolidayPackages />
-      </ClientWrapper>
-
-      {/* Activity Grid */}
-      <ClientWrapper>
-        <ActivityGrid />
-      </ClientWrapper>
-
-      {/* Popular Destinations Carousel */}
-      <ClientWrapper>
-        <PopularDestinationsCarousel />
-      </ClientWrapper>
-
-      {/* Special Offers Section */}
-      <ClientWrapper>
-        <SpecialOffersSection />
-      </ClientWrapper>
-
-      {/* Trending Destinations */}
-      <ClientWrapper>
-        <TrendingDestinations />
-      </ClientWrapper>
-
-      {/* Customer Reviews */}
-      <ClientWrapper>
-        <CustomerReviews />
-      </ClientWrapper>
-
-      {/* Travel Blogs */}
-      <ClientWrapper>
-        <TravelBlogs />
-      </ClientWrapper>
-
-      {/* Features Section */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-blue-50 relative overflow-hidden">
-        <div className="container relative z-10 px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-5xl font-bold mb-6 bg-gradient-to-r from-gray-800 to-blue-600 bg-clip-text text-transparent">
-              Why Choose JMT Travel?
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We make your travel dreams come true with our exceptional service and unbeatable experiences
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card
-                key={index}
-                className="group hover:shadow-2xl transition-all duration-500 hover:-translate-y-4 border-0 bg-white/80 backdrop-blur-sm overflow-hidden"
-              >
-                <div className={`h-2 bg-gradient-to-r ${feature.gradient}`}></div>
-                <CardContent className="p-8 text-center">
-                  <div className="flex justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                    <div className={`p-4 bg-gradient-to-r ${feature.gradient} rounded-full text-white shadow-lg`}>
-                      {feature.icon}
-                    </div>
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4 group-hover:text-blue-600 transition-colors">
-                    {feature.title}
-                  </h3>
-                  <p className="text-base text-gray-600 leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Custom Tour CTA */}
-      <section className="py-16 bg-gradient-to-r from-orange-500 to-red-500 text-white">
-        <div className="container text-center px-6">
-          <h2 className="text-4xl font-bold mb-4">Need a Custom Tour Package?</h2>
-          <p className="text-xl mb-8 opacity-90">Let our travel experts create a personalized itinerary just for you</p>
-          <Button size="lg" className="bg-white text-orange-600 hover:bg-gray-100 px-8 py-4 text-lg" asChild>
-            <Link href="/custom-packages">Create Custom Package</Link>
-          </Button>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <ClientWrapper>
-        <Testimonials />
-      </ClientWrapper>
-
-      {/* Partners Section */}
-      <ClientWrapper>
-        <Partners />
-      </ClientWrapper>
-
-      {/* Newsletter Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white relative overflow-hidden">
-        <div className="container text-center relative z-10 px-6">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-5xl font-bold mb-6">Get Exclusive Travel Deals</h2>
-            <p className="text-2xl mb-12 opacity-90">
-              Subscribe to our newsletter and be the first to know about amazing offers and new destinations
-            </p>
-            <div className="max-w-md mx-auto">
-              <div className="flex flex-col sm:flex-row gap-4 p-2 bg-white/10 backdrop-blur-sm rounded-2xl">
-                <input
-                  type="email"
-                  placeholder="Enter your email address"
-                  className="flex-1 px-6 py-4 rounded-xl text-gray-900 border-0 focus:outline-none focus:ring-2 focus:ring-white/50 text-base"
-                />
-                <Button className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 text-base">
-                  Subscribe
-                </Button>
-              </div>
-              <p className="text-sm opacity-75 mt-4">Join 50,000+ travelers who trust us for their adventures</p>
+      {/* Quick Stats */}
+      <section className="py-16 bg-white">
+        <div className="container">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">{destinations.length}+</div>
+              <div className="text-gray-600">Destinations</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">{trips.length}+</div>
+              <div className="text-gray-600">Tour Packages</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">10K+</div>
+              <div className="text-gray-600">Happy Travelers</div>
+            </div>
+            <div>
+              <div className="text-4xl font-bold text-blue-600 mb-2">15+</div>
+              <div className="text-gray-600">Years Experience</div>
             </div>
           </div>
         </div>
       </section>
+
+      {/* Trip Types */}
+      {tripTypes.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">Choose Your Adventure</h2>
+              <p className="text-xl text-gray-600">Find the perfect trip type for your next journey</p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {tripTypes.slice(0, 8).map((type) => (
+                <Link key={type._id} href={`/trip-types/${type.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                  <Card className="hover:shadow-lg transition-all duration-300 group cursor-pointer">
+                    <CardContent className="p-6 text-center">
+                      <div className="mb-4 group-hover:scale-110 transition-transform">
+                        {type.iconUrl ? (
+                          <Image
+                            src={type.iconUrl || "/placeholder.svg"}
+                            alt={type.name}
+                            width={48}
+                            height={48}
+                            className="mx-auto"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+                            <Mountain className="h-6 w-6 text-blue-600" />
+                          </div>
+                        )}
+                      </div>
+                      <h3 className="font-semibold text-lg mb-2">{type.name}</h3>
+                      <p className="text-sm text-gray-600">{type.description}</p>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            <div className="text-center mt-8">
+              <Button asChild size="lg">
+                <Link href="/trip-types">View All Trip Types</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Popular Destinations */}
+      {popularDestinations.length > 0 && (
+        <section className="py-16 bg-white">
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">Popular Destinations</h2>
+              <p className="text-xl text-gray-600">Discover the most loved travel destinations</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {popularDestinations.map((destination) => (
+                <Link
+                  key={destination._id}
+                  href={`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`}
+                >
+                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                    <div className="relative h-64">
+                      <Image
+                        src={destination.imageUrl || "/placeholder.svg?height=300&width=400"}
+                        alt={destination.name}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+
+                      {destination.trending && (
+                        <Badge className="absolute top-4 left-4 bg-green-500">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Trending
+                        </Badge>
+                      )}
+
+                      <div className="absolute bottom-4 left-4 text-white">
+                        <h3 className="text-2xl font-bold mb-1">{destination.name}</h3>
+                        <div className="flex items-center text-sm">
+                          <MapPin className="h-4 w-4 mr-1" />
+                          {destination.country}
+                        </div>
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            <div className="text-center mt-8">
+              <Button asChild size="lg">
+                <Link href="/destinations">Explore All Destinations</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Featured Trips */}
+      {featuredTrips.length > 0 && (
+        <section className="py-16 bg-gray-50">
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2 className="text-4xl font-bold mb-4">Featured Packages</h2>
+              <p className="text-xl text-gray-600">Handpicked travel packages for unforgettable experiences</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredTrips.map((trip) => (
+                <Link key={trip._id} href={`/trips/${trip._id}`}>
+                  <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                    <div className="relative h-48">
+                      <Image
+                        src={trip.images?.[0] || "/placeholder.svg?height=200&width=300"}
+                        alt={trip.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                      {trip.isTrending && (
+                        <Badge className="absolute top-2 right-2 bg-red-500">
+                          <TrendingUp className="h-3 w-3 mr-1" />
+                          Hot
+                        </Badge>
+                      )}
+                    </div>
+
+                    <CardContent className="p-4">
+                      <h3 className="font-semibold text-lg mb-2 line-clamp-2">{trip.title}</h3>
+                      <div className="flex items-center text-sm text-gray-600 mb-2">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        {trip.destinationName}
+                      </div>
+                      <div className="flex items-center text-sm text-gray-600 mb-3">
+                        <Calendar className="h-4 w-4 mr-1" />
+                        {trip.durationDays}D/{trip.durationNights}N
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-2xl font-bold text-green-600">₹{trip.salePrice?.toLocaleString()}</span>
+                          {trip.adultPrice > trip.salePrice && (
+                            <span className="text-sm text-gray-500 line-through ml-2">
+                              ₹{trip.adultPrice?.toLocaleString()}
+                            </span>
+                          )}
+                        </div>
+                        <Badge variant="outline">{trip.tripType}</Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+
+            <div className="text-center mt-8">
+              <Button asChild size="lg">
+                <Link href="/trips">View All Packages</Link>
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* Why Choose Us */}
+      <section className="py-16 bg-white">
+        <div className="container">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Why Choose JMT Travel?</h2>
+            <p className="text-xl text-gray-600">Your trusted partner for memorable journeys</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
+                <Award className="h-8 w-8 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Expert Planning</h3>
+              <p className="text-gray-600">15+ years of experience in crafting perfect travel experiences</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
+                <Shield className="h-8 w-8 text-green-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">Safe & Secure</h3>
+              <p className="text-gray-600">100% secure bookings with comprehensive travel insurance</p>
+            </div>
+
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto mb-4 bg-purple-100 rounded-full flex items-center justify-center">
+                <Clock className="h-8 w-8 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold mb-2">24/7 Support</h3>
+              <p className="text-gray-600">Round-the-clock customer support for a hassle-free experience</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Customer Reviews */}
+      <CustomerReviews />
+
+      {/* Partners */}
+      <Partners />
+
+      {/* Contact CTA */}
+      <section className="py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="container text-center">
+          <h2 className="text-4xl font-bold mb-4">Ready to Start Your Journey?</h2>
+          <p className="text-xl mb-8">Get in touch with our travel experts today</p>
+
+          <div className="flex flex-col md:flex-row gap-4 justify-center items-center mb-8">
+            <div className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              <span>+91 98765 43210</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              <span>info@jmttravel.com</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100" asChild>
+              <Link href="/custom-packages">Plan Custom Trip</Link>
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-white text-white hover:bg-white hover:text-blue-600 bg-transparent"
+              asChild
+            >
+              <Link href="/contact">Contact Us</Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {loading && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg">
+            <div className="animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p>Loading latest data...</p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

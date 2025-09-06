@@ -8,8 +8,8 @@ import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 
 interface FileUploadProps {
   label?: string
-  value?: string
-  onChange: (url: string) => void
+  value?: string | string[]
+  onChange: (url: string | string[]) => void
   multiple?: boolean
   accept?: string
   maxSize?: number
@@ -32,12 +32,10 @@ export function FileUpload({
   const uploadToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "jmt_travel_preset")
-
-    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn"
+    formData.append("upload_preset", "ml_default") // Use default preset
 
     try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/dvimun8pn/image/upload`, {
         method: "POST",
         body: formData,
       })
@@ -55,27 +53,28 @@ export function FileUpload({
     }
   }
 
-  const handleFileUpload = async (file: File) => {
-    if (!file) return
+  const handleFileUpload = async (files: FileList) => {
+    if (!files || files.length === 0) return
 
     setError(null)
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file (JPG, PNG, GIF)")
-      return
-    }
-
-    // Validate file size
-    if (file.size > maxSize) {
-      setError(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
-      return
-    }
-
     setUploading(true)
     setProgress(0)
 
     try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        // Validate file type
+        if (!file.type.startsWith("image/")) {
+          throw new Error("Please select image files only (JPG, PNG, GIF)")
+        }
+
+        // Validate file size
+        if (file.size > maxSize) {
+          throw new Error(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
+        }
+
+        return uploadToCloudinary(file)
+      })
+
       // Simulate progress
       const progressInterval = setInterval(() => {
         setProgress((prev) => {
@@ -87,13 +86,18 @@ export function FileUpload({
         })
       }, 200)
 
-      const url = await uploadToCloudinary(file)
+      const urls = await Promise.all(uploadPromises)
 
       clearInterval(progressInterval)
       setProgress(100)
 
       setTimeout(() => {
-        onChange(url)
+        if (multiple) {
+          const currentUrls = Array.isArray(value) ? value : []
+          onChange([...currentUrls, ...urls])
+        } else {
+          onChange(urls[0])
+        }
         setProgress(0)
         setUploading(false)
         setError(null)
@@ -121,37 +125,51 @@ export function FileUpload({
     e.stopPropagation()
     setDragActive(false)
 
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0])
+    if (e.dataTransfer.files) {
+      handleFileUpload(e.dataTransfer.files)
     }
   }
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFileUpload(e.target.files[0])
+    if (e.target.files) {
+      handleFileUpload(e.target.files)
     }
   }
+
+  const removeImage = (urlToRemove: string) => {
+    if (multiple && Array.isArray(value)) {
+      onChange(value.filter((url) => url !== urlToRemove))
+    } else {
+      onChange("")
+    }
+  }
+
+  const currentValue = Array.isArray(value) ? value : value ? [value] : []
 
   return (
     <div className="space-y-4">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
 
-      {value && (
-        <div className="relative">
-          <img
-            src={value || "/placeholder.svg"}
-            alt="Uploaded image"
-            className="w-full h-48 object-cover rounded-lg border"
-          />
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            className="absolute top-2 right-2"
-            onClick={() => onChange("")}
-          >
-            <X className="h-4 w-4" />
-          </Button>
+      {currentValue.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+          {currentValue.map((url, index) => (
+            <div key={index} className="relative">
+              <img
+                src={url || "/placeholder.svg"}
+                alt={`Uploaded image ${index + 1}`}
+                className="w-full h-32 object-cover rounded-lg border"
+              />
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2 h-6 w-6 p-0"
+                onClick={() => removeImage(url)}
+              >
+                <X className="h-3 w-3" />
+              </Button>
+            </div>
+          ))}
         </div>
       )}
 
@@ -197,7 +215,7 @@ export function FileUpload({
             </div>
             <Button type="button" variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-2" />
-              Choose File
+              Choose File{multiple ? "s" : ""}
             </Button>
           </div>
         )}
