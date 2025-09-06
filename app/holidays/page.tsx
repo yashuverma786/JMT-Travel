@@ -1,350 +1,306 @@
-import { Suspense } from "react"
-import Link from "next/link"
+"use client"
+
+import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
-import { Star, Clock, Calendar, Search, Filter } from "lucide-react"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Star, Clock, MapPin, Search, Loader2 } from "lucide-react"
 
-// Mock data for holiday packages
-const holidayPackages = [
-  {
-    id: 1,
-    title: "Enchanting Bali Adventure",
-    destination: "Bali, Indonesia",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "7 Days / 6 Nights",
-    price: 1299,
-    rating: 4.8,
-    reviews: 245,
-    discount: 15,
-    startDate: "Jun 15, 2024",
-  },
-  {
-    id: 2,
-    title: "Magical Switzerland Tour",
-    destination: "Zurich, Switzerland",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "8 Days / 7 Nights",
-    price: 2499,
-    rating: 4.9,
-    reviews: 189,
-    discount: 10,
-    startDate: "Jul 10, 2024",
-  },
-  {
-    id: 3,
-    title: "Serene Maldives Getaway",
-    destination: "Malé, Maldives",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "5 Days / 4 Nights",
-    price: 1899,
-    rating: 4.7,
-    reviews: 312,
-    discount: 20,
-    startDate: "Aug 5, 2024",
-  },
-  {
-    id: 4,
-    title: "Historic Rome Expedition",
-    destination: "Rome, Italy",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "6 Days / 5 Nights",
-    price: 1599,
-    rating: 4.6,
-    reviews: 178,
-    discount: 12,
-    startDate: "Sep 20, 2024",
-  },
-  {
-    id: 5,
-    title: "Amazing Thailand Experience",
-    destination: "Bangkok, Thailand",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "9 Days / 8 Nights",
-    price: 1399,
-    rating: 4.5,
-    reviews: 210,
-    discount: 8,
-    startDate: "Oct 15, 2024",
-  },
-  {
-    id: 6,
-    title: "Vibrant Vietnam Tour",
-    destination: "Hanoi, Vietnam",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "10 Days / 9 Nights",
-    price: 1699,
-    rating: 4.7,
-    reviews: 156,
-    discount: 5,
-    startDate: "Nov 5, 2024",
-  },
-  {
-    id: 7,
-    title: "Exotic Egypt Adventure",
-    destination: "Cairo, Egypt",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "8 Days / 7 Nights",
-    price: 1899,
-    rating: 4.8,
-    reviews: 189,
-    discount: 0,
-    startDate: "Dec 10, 2024",
-  },
-  {
-    id: 8,
-    title: "Majestic Morocco Journey",
-    destination: "Marrakech, Morocco",
-    image: "/placeholder.svg?height=300&width=400",
-    duration: "7 Days / 6 Nights",
-    price: 1499,
-    rating: 4.6,
-    reviews: 142,
-    discount: 10,
-    startDate: "Jan 15, 2025",
-  },
-]
-
-// Filter sidebar component
-function FilterSidebar() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="font-medium mb-4">Search</h3>
-        <div className="relative">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search destinations" className="pl-9" />
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-medium mb-4">Price Range</h3>
-        <Slider defaultValue={[1000, 3000]} min={500} max={5000} step={100} />
-        <div className="flex items-center justify-between mt-2 text-sm">
-          <span>$500</span>
-          <span>$5000</span>
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-medium mb-4">Duration</h3>
-        <div className="space-y-2">
-          {["1-3 Days", "4-7 Days", "8-14 Days", "15+ Days"].map((duration) => (
-            <div key={duration} className="flex items-center space-x-2">
-              <Checkbox id={`duration-${duration}`} />
-              <label
-                htmlFor={`duration-${duration}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {duration}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-medium mb-4">Destinations</h3>
-        <div className="space-y-2">
-          {["Asia", "Europe", "Africa", "North America", "South America", "Australia"].map((continent) => (
-            <div key={continent} className="flex items-center space-x-2">
-              <Checkbox id={`continent-${continent}`} />
-              <label
-                htmlFor={`continent-${continent}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                {continent}
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <h3 className="font-medium mb-4">Rating</h3>
-        <div className="space-y-2">
-          {[5, 4, 3, 2].map((rating) => (
-            <div key={rating} className="flex items-center space-x-2">
-              <Checkbox id={`rating-${rating}`} />
-              <label
-                htmlFor={`rating-${rating}`}
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center"
-              >
-                {Array(rating)
-                  .fill(0)
-                  .map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                {Array(5 - rating)
-                  .fill(0)
-                  .map((_, i) => (
-                    <Star key={i} className="h-4 w-4 text-gray-300" />
-                  ))}
-                <span className="ml-1">& Up</span>
-              </label>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <Button className="w-full">Apply Filters</Button>
-    </div>
-  )
-}
-
-// Package card component
-function PackageCard({ pkg }: { pkg: (typeof holidayPackages)[0] }) {
-  const discountedPrice = pkg.price - (pkg.price * pkg.discount) / 100
-
-  return (
-    <Card className="overflow-hidden transition-all hover:shadow-lg">
-      <div className="relative">
-        <Image
-          src={pkg.image || "/placeholder.svg"}
-          alt={pkg.title}
-          width={400}
-          height={300}
-          className="w-full h-48 object-cover"
-        />
-        {pkg.discount > 0 && (
-          <Badge className="absolute top-3 left-3 bg-red-500 hover:bg-red-600">{pkg.discount}% OFF</Badge>
-        )}
-      </div>
-
-      <CardContent className="p-4">
-        <div className="flex items-center gap-1 text-sm text-amber-500 mb-2">
-          <Star className="h-4 w-4 fill-current" />
-          <span className="font-medium">{pkg.rating}</span>
-          <span className="text-gray-500">({pkg.reviews} reviews)</span>
-        </div>
-
-        <h3 className="font-bold text-lg mb-1 line-clamp-1">{pkg.title}</h3>
-        <p className="text-muted-foreground text-sm mb-3">{pkg.destination}</p>
-
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4 text-gray-500" />
-            <span>{pkg.duration}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Calendar className="h-4 w-4 text-gray-500" />
-            <span>{pkg.startDate}</span>
-          </div>
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0 flex items-center justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">Starting from</p>
-          <div className="flex items-center gap-2">
-            {pkg.discount > 0 && <span className="text-sm text-muted-foreground line-through">${pkg.price}</span>}
-            <p className="text-xl font-bold">${discountedPrice}</p>
-          </div>
-        </div>
-        <Button asChild>
-          <Link href={`/holidays/${pkg.id}`}>View Details</Link>
-        </Button>
-      </CardFooter>
-    </Card>
-  )
-}
-
-// Loading skeleton for packages
-function PackagesSkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="border rounded-lg overflow-hidden">
-          <div className="h-48 bg-gray-200 animate-pulse" />
-          <div className="p-4 space-y-3">
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-1/4" />
-            <div className="h-6 bg-gray-200 rounded animate-pulse w-3/4" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
-            <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3" />
-            <div className="flex justify-between items-center pt-4">
-              <div className="h-6 bg-gray-200 rounded animate-pulse w-1/4" />
-              <div className="h-10 bg-gray-200 rounded animate-pulse w-1/3" />
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
+interface Holiday {
+  _id: string
+  title: string
+  destinationName: string
+  imageUrls?: string[]
+  featuredImage?: string
+  adultPrice: number
+  salePrice?: number
+  durationDays: number
+  durationNights: number
+  rating?: number
+  reviews?: number
+  category: string
+  includes: string[]
+  highlights: string[]
+  isTrending?: boolean
+  featured?: boolean
 }
 
 export default function HolidaysPage() {
-  return (
-    <div className="container py-8">
-      <div className="flex flex-col gap-2 mb-8">
-        <h1 className="text-3xl font-bold">Holiday Packages</h1>
-        <p className="text-muted-foreground">
-          Discover our curated selection of holiday packages to destinations around the world
-        </p>
+  const [holidays, setHolidays] = useState<Holiday[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [sortBy, setSortBy] = useState("featured")
+  const [filterCategory, setFilterCategory] = useState("all")
+
+  useEffect(() => {
+    fetchHolidays()
+  }, [])
+
+  const fetchHolidays = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch("/api/trips")
+      if (response.ok) {
+        const data = await response.json()
+        setHolidays(data.trips || [])
+      }
+    } catch (error) {
+      console.error("Error fetching holidays:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter holidays
+  let filteredHolidays = holidays.filter(
+    (holiday) =>
+      holiday.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      holiday.destinationName?.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
+
+  if (filterCategory !== "all") {
+    filteredHolidays = filteredHolidays.filter(
+      (holiday) => holiday.category?.toLowerCase() === filterCategory.toLowerCase(),
+    )
+  }
+
+  // Sort holidays
+  filteredHolidays.sort((a, b) => {
+    switch (sortBy) {
+      case "price-low":
+        return (a.salePrice || a.adultPrice) - (b.salePrice || b.adultPrice)
+      case "price-high":
+        return (b.salePrice || b.adultPrice) - (a.salePrice || a.adultPrice)
+      case "rating":
+        return (b.rating || 0) - (a.rating || 0)
+      case "duration":
+        return b.durationDays - a.durationDays
+      default:
+        // featured first
+        if (a.featured && !b.featured) return -1
+        if (!a.featured && b.featured) return 1
+        if (a.isTrending && !b.isTrending) return -1
+        if (!a.isTrending && b.isTrending) return 1
+        return a.title.localeCompare(b.title)
+    }
+  })
+
+  const categories = Array.from(new Set(holidays.map((h) => h.category).filter(Boolean)))
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <section className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-16">
+          <div className="container text-center">
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">Holiday Packages</h1>
+            <p className="text-xl opacity-90">Discover amazing holiday destinations and experiences</p>
+          </div>
+        </section>
+        <div className="container py-16">
+          <div className="flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span className="text-lg">Loading holiday packages...</span>
+          </div>
+        </div>
       </div>
+    )
+  }
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-1/4">
-          <div className="sticky top-24">
-            <div className="flex items-center justify-between mb-4 lg:hidden">
-              <h2 className="font-semibold">Filters</h2>
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <Filter className="h-4 w-4" />
-                Filter
-              </Button>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-green-600 to-blue-600 text-white py-16">
+        <div className="container text-center">
+          <h1 className="text-4xl md:text-5xl font-bold mb-4">Holiday Packages</h1>
+          <p className="text-xl opacity-90">Discover amazing holiday destinations and experiences</p>
+        </div>
+      </section>
+
+      <div className="container py-8">
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search holiday packages..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
-            <div className="hidden lg:block">
-              <FilterSidebar />
+            <div className="flex gap-2">
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="price-low">Price: Low to High</SelectItem>
+                  <SelectItem value="price-high">Price: High to Low</SelectItem>
+                  <SelectItem value="rating">Rating</SelectItem>
+                  <SelectItem value="duration">Duration</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category.charAt(0).toUpperCase() + category.slice(1)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
-        <div className="lg:w-3/4">
-          <div className="flex items-center justify-between mb-6">
-            <p className="text-muted-foreground">Showing {holidayPackages.length} packages</p>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">Sort by:</span>
-              <select className="text-sm border rounded-md p-1">
-                <option>Popularity</option>
-                <option>Price: Low to High</option>
-                <option>Price: High to Low</option>
-                <option>Duration: Short to Long</option>
-                <option>Rating</option>
-              </select>
-            </div>
-          </div>
-
-          <Suspense fallback={<PackagesSkeleton />}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {holidayPackages.map((pkg) => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
-            </div>
-          </Suspense>
-
-          <div className="mt-8 flex justify-center">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" className="bg-primary text-white">
-                1
-              </Button>
-              <Button variant="outline" size="sm">
-                2
-              </Button>
-              <Button variant="outline" size="sm">
-                3
-              </Button>
-              <Button variant="outline" size="sm">
-                Next
-              </Button>
-            </div>
-          </div>
+        {/* Results Count */}
+        <div className="mb-6">
+          <p className="text-gray-600">Showing {filteredHolidays.length} holiday packages</p>
         </div>
+
+        {/* Holidays Grid */}
+        {filteredHolidays.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredHolidays.map((holiday) => {
+              const displayPrice = holiday.salePrice || holiday.adultPrice
+              const hasDiscount = holiday.salePrice && holiday.salePrice < holiday.adultPrice
+              const discountPercent = hasDiscount
+                ? Math.round(((holiday.adultPrice - holiday.salePrice!) / holiday.adultPrice) * 100)
+                : 0
+
+              return (
+                <Card key={holiday._id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                  <div className="relative">
+                    <Image
+                      src={
+                        holiday.featuredImage ||
+                        (holiday.imageUrls && holiday.imageUrls[0]) ||
+                        "/placeholder.svg?height=200&width=300"
+                      }
+                      alt={holiday.title}
+                      width={300}
+                      height={200}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg?height=200&width=300"
+                      }}
+                    />
+                    {hasDiscount && (
+                      <Badge className="absolute top-2 right-2 bg-red-500 text-white font-bold">
+                        {discountPercent}% OFF
+                      </Badge>
+                    )}
+                    {holiday.isTrending && (
+                      <Badge className="absolute top-2 left-2 bg-green-500 text-white">Trending</Badge>
+                    )}
+                    {holiday.featured && (
+                      <Badge className="absolute bottom-2 left-2 bg-yellow-500 text-white">Featured</Badge>
+                    )}
+                  </div>
+
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-lg line-clamp-2">{holiday.title}</h3>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <MapPin className="h-3 w-3" />
+                          <span>{holiday.destinationName}</span>
+                          <span className="mx-1">•</span>
+                          <Clock className="h-3 w-3" />
+                          <span>
+                            {holiday.durationDays}D/{holiday.durationNights}N
+                          </span>
+                        </div>
+                      </div>
+
+                      {holiday.highlights && holiday.highlights.length > 0 && (
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-gray-700">Highlights:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {holiday.highlights.slice(0, 3).map((highlight, index) => (
+                              <span key={index} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                                {highlight}
+                              </span>
+                            ))}
+                            {holiday.highlights.length > 3 && (
+                              <span className="text-xs text-gray-500">+{holiday.highlights.length - 3} more</span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      {holiday.rating && (
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-1">
+                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            <span>{holiday.rating}</span>
+                            {holiday.reviews && <span className="text-gray-500">({holiday.reviews})</span>}
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {holiday.category}
+                          </Badge>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xl font-bold text-green-600">₹{displayPrice.toLocaleString()}</span>
+                            {hasDiscount && (
+                              <span className="text-sm text-gray-500 line-through">
+                                ₹{holiday.adultPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500">per person</div>
+                          {hasDiscount && (
+                            <div className="text-xs text-green-600 font-medium">
+                              You save ₹{(holiday.adultPrice - holiday.salePrice!).toLocaleString()}
+                            </div>
+                          )}
+                        </div>
+                        <Button size="sm" className="bg-orange-500 hover:bg-orange-600" asChild>
+                          <Link href={`/holidays/${holiday._id}`}>Book Now</Link>
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <div className="text-gray-500 mb-4">No holiday packages found</div>
+            <p className="text-sm text-gray-400 mb-4">
+              {holidays.length === 0
+                ? "Add some trips from the admin panel to get started!"
+                : "Try adjusting your search or filters."}
+            </p>
+            <Button
+              onClick={() => {
+                setSearchTerm("")
+                setFilterCategory("all")
+              }}
+            >
+              Clear Filters
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   )

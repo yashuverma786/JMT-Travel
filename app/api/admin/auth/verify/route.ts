@@ -1,9 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+import { type NextRequest, NextResponse } from "next/server"
 import jwt from "jsonwebtoken"
+import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,25 +12,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret") as any
 
     const { db } = await connectToDatabase()
 
-    // Get user from database
-    const user = await db.collection("admin_users").findOne({
+    // Find admin user
+    const admin = await db.collection("admin_users").findOne({
       _id: new ObjectId(decoded.userId),
     })
 
-    if (!user) {
-      return NextResponse.json({ message: "User not found" }, { status: 401 })
+    if (!admin) {
+      return NextResponse.json({ message: "Admin not found" }, { status: 401 })
     }
 
     return NextResponse.json({
       user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        permissions: user.permissions || [],
+        id: admin._id,
+        email: admin.email,
+        username: admin.username,
+        role: admin.role || "admin",
       },
     })
   } catch (error) {

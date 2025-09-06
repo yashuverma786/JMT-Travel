@@ -7,14 +7,19 @@ export async function GET() {
 
     const destinations = await db
       .collection("destinations")
-      .find({ $or: [{ popular: true }, { trending: true }] })
-      .sort({ createdAt: -1 })
-      .limit(20)
+      .find({ status: { $ne: "inactive" } })
+      .sort({ popular: -1, trending: -1, createdAt: -1 })
       .toArray()
 
-    return NextResponse.json(destinations)
+    return NextResponse.json({ destinations })
   } catch (error) {
     console.error("Error fetching destinations:", error)
-    return NextResponse.json({ message: "Error fetching destinations" }, { status: 500 })
+    return NextResponse.json(
+      {
+        message: "Error fetching destinations",
+        destinations: [],
+      },
+      { status: 500 },
+    )
   }
 }

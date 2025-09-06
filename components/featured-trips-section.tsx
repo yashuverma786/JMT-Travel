@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import Image from "next/image"
-import { MapPin, Calendar, Star, Clock } from "lucide-react"
+import { MapPin, Calendar, Star, Clock, Loader2 } from "lucide-react"
 
 interface Trip {
   _id: string
@@ -24,6 +24,7 @@ interface Trip {
   category?: string
   tripType?: string
   isTrending?: boolean
+  featured?: boolean
 }
 
 export default function FeaturedTripsSection() {
@@ -31,22 +32,22 @@ export default function FeaturedTripsSection() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchTrips = async () => {
-      try {
-        const response = await fetch("/api/trips?limit=6")
-        if (response.ok) {
-          const data = await response.json()
-          setTrips(data.trips || [])
-        }
-      } catch (error) {
-        console.error("Failed to fetch trips:", error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchTrips()
   }, [])
+
+  const fetchTrips = async () => {
+    try {
+      const response = await fetch("/api/trips?limit=6")
+      if (response.ok) {
+        const data = await response.json()
+        setTrips(data.trips || [])
+      }
+    } catch (error) {
+      console.error("Failed to fetch trips:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const calculateDiscount = (originalPrice: number, salePrice: number) => {
     return Math.round(((originalPrice - salePrice) / originalPrice) * 100)
@@ -60,16 +61,9 @@ export default function FeaturedTripsSection() {
             <h2 className="text-4xl font-bold mb-4 text-gray-800">Featured Trips</h2>
             <p className="text-xl text-gray-600">Discover our most popular travel packages</p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="bg-gray-300 h-48 rounded-lg mb-4"></div>
-                <div className="space-y-2">
-                  <div className="bg-gray-300 h-4 rounded"></div>
-                  <div className="bg-gray-300 h-4 rounded w-3/4"></div>
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin mr-2" />
+            <span className="text-lg">Loading trips...</span>
           </div>
         </div>
       </section>
@@ -121,10 +115,8 @@ export default function FeaturedTripsSection() {
                     {trip.isTrending && (
                       <Badge className="absolute top-3 left-3 bg-green-600 text-white">Trending</Badge>
                     )}
-                    {(trip.category || trip.tripType) && (
-                      <Badge className="absolute bottom-3 right-3 bg-blue-600 text-white">
-                        {trip.category || trip.tripType}
-                      </Badge>
+                    {trip.featured && (
+                      <Badge className="absolute bottom-3 left-3 bg-yellow-600 text-white">Featured</Badge>
                     )}
                   </div>
 
@@ -202,7 +194,7 @@ export default function FeaturedTripsSection() {
                   <Calendar className="h-16 w-16 mx-auto" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">No trips available</h3>
-                <p className="text-gray-500">Check back soon for exciting travel packages!</p>
+                <p className="text-gray-500">Add some trips from the admin panel to get started!</p>
               </div>
             </div>
           </div>

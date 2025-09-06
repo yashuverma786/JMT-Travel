@@ -1,9 +1,7 @@
-import { NextResponse, type NextRequest } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
+import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,49 +13,51 @@ export async function POST(request: NextRequest) {
 
     const { db } = await connectToDatabase()
 
-    // Look for user in admin_users collection
-    const user = await db.collection("admin_users").findOne({
-      $or: [{ email }, { username: email }],
+    // Find admin user
+    const admin = await db.collection("admin_users").findOne({
+      $or: [{ email: email }, { username: email }],
     })
 
-    if (!user) {
+    if (!admin) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
 
     // Check password
-    const isValidPassword = await bcrypt.compare(password, user.password)
-    if (!isValidPassword) {
+    const isPasswordValid = await bcrypt.compare(password, admin.password)
+
+    if (!isPasswordValid) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
 
-    // Create JWT token
+    // Generate JWT token
     const token = jwt.sign(
       {
-        userId: user._id,
-        email: user.email,
-        username: user.username,
-        permissions: user.permissions || [],
+        userId: admin._id,
+        email: admin.email,
+        username: admin.username,
+        role: admin.role || "admin",
       },
-      JWT_SECRET,
-      { expiresIn: "24h" },
+      process.env.JWT_SECRET || "fallback-secret",
+      { expiresIn: "7d" },
     )
 
-    // Create response with token in cookie
+    // Create response
     const response = NextResponse.json({
       message: "Login successful",
       user: {
-        id: user._id,
-        email: user.email,
-        username: user.username,
-        permissions: user.permissions || [],
+        id: admin._id,
+        email: admin.email,
+        username: admin.username,
+        role: admin.role || "admin",
       },
     })
 
+    // Set HTTP-only cookie
     response.cookies.set("admin-token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 86400, // 24 hours
+      maxAge: 7 * 24 * 60 * 60, // 7 days
     })
 
     return response

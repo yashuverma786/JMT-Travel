@@ -5,11 +5,21 @@ export async function GET() {
   try {
     const { db } = await connectToDatabase()
 
-    const tripTypes = await db.collection("trip_types").find({}).toArray()
+    const tripTypes = await db
+      .collection("trip_types")
+      .find({ status: { $ne: "inactive" } })
+      .sort({ name: 1 })
+      .toArray()
 
-    return NextResponse.json(tripTypes)
+    return NextResponse.json({ tripTypes })
   } catch (error) {
     console.error("Error fetching trip types:", error)
-    return NextResponse.json({ error: "Failed to fetch trip types" }, { status: 500 })
+    return NextResponse.json(
+      {
+        message: "Error fetching trip types",
+        tripTypes: [],
+      },
+      { status: 500 },
+    )
   }
 }

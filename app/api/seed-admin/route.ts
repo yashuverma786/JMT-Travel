@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server"
-import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
+import { connectToDatabase } from "@/lib/mongodb"
 
 export async function POST() {
   try {
     const { db } = await connectToDatabase()
 
-    // Check if admin user already exists
-    const existingUser = await db.collection("admin_users").findOne({
-      email: "admin@jmttravel.com",
+    // Check if admin already exists
+    const existingAdmin = await db.collection("admin_users").findOne({
+      $or: [{ email: "admin@jmttravel.com" }, { username: "Trip.jmt" }],
     })
 
-    if (existingUser) {
+    if (existingAdmin) {
       return NextResponse.json({ message: "Admin user already exists" }, { status: 400 })
     }
 
@@ -24,19 +24,6 @@ export async function POST() {
       email: "admin@jmttravel.com",
       password: hashedPassword,
       role: "admin",
-      permissions: [
-        "manage_trips",
-        "manage_destinations",
-        "manage_users",
-        "manage_reviews",
-        "manage_activities",
-        "manage_blogs",
-        "manage_collaborators",
-        "manage_leads",
-        "manage_hotels",
-        "manage_transfers",
-        "manage_custom_requests",
-      ],
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -49,6 +36,6 @@ export async function POST() {
     })
   } catch (error) {
     console.error("Error creating admin user:", error)
-    return NextResponse.json({ message: "Error creating admin user" }, { status: 500 })
+    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
   }
 }
