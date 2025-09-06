@@ -6,76 +6,60 @@ export async function GET() {
   try {
     const { db } = await connectToDatabase()
 
-    const defaultUsername = "Trip.jmt"
-    const defaultPassword = "QAZqaz#JMT0202"
-    const defaultEmail = "admin@jmttravel.com"
-
     // Check if admin user already exists
-    const existingUser = await db.collection("admin_users").findOne({
-      $or: [{ username: defaultUsername }, { email: defaultEmail }],
+    const existingAdmin = await db.collection("admin_users").findOne({
+      $or: [{ email: "admin@jmttravel.com" }, { username: "Trip.jmt" }],
     })
 
-    if (existingUser) {
+    if (existingAdmin) {
       return NextResponse.json({
         message: "Admin user already exists",
-        user: {
-          username: existingUser.username,
-          email: existingUser.email,
-          role: existingUser.role,
+        credentials: {
+          email: "admin@jmttravel.com",
+          password: "QAZqaz#JMT0202",
         },
       })
     }
 
     // Hash the password
-    const hashedPassword = await bcrypt.hash(defaultPassword, 10)
+    const hashedPassword = await bcrypt.hash("QAZqaz#JMT0202", 12)
 
-    // Create the admin user
-    const newUser = {
-      username: defaultUsername,
-      email: defaultEmail,
+    // Create admin user
+    const adminUser = {
+      username: "Trip.jmt",
+      email: "admin@jmttravel.com",
       password: hashedPassword,
       role: "super_admin",
       permissions: [
-        "manage_users",
-        "manage_destinations",
         "manage_trips",
-        "manage_bookings",
+        "manage_destinations",
+        "manage_users",
         "manage_reviews",
+        "manage_activities",
         "manage_blogs",
-        "manage_partners",
-        "view_analytics",
-        "approve_listings",
-        "manage_payments",
+        "manage_collaborators",
+        "manage_leads",
+        "manage_hotels",
+        "manage_transfers",
+        "manage_rentals",
+        "manage_custom_requests",
       ],
-      status: "active",
       createdAt: new Date(),
       lastLogin: null,
     }
 
-    const result = await db.collection("admin_users").insertOne(newUser)
+    const result = await db.collection("admin_users").insertOne(adminUser)
 
     return NextResponse.json({
       message: "Admin user created successfully",
-      user: {
-        id: result.insertedId,
-        username: defaultUsername,
-        email: defaultEmail,
-        role: "super_admin",
-      },
+      userId: result.insertedId,
       credentials: {
-        email: defaultEmail,
-        password: defaultPassword,
-        note: "Please change this password after first login",
+        email: "admin@jmttravel.com",
+        password: "QAZqaz#JMT0202",
       },
     })
   } catch (error) {
-    console.error("Error seeding admin user:", error)
-    return NextResponse.json(
-      {
-        message: "Error creating admin user",
-        error: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 },
-    )
+    console.error("Seed admin error:", error)
+    return NextResponse.json({ message: "Failed to create admin user" }, { status: 500 })
   }
 }

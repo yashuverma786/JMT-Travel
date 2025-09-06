@@ -17,7 +17,9 @@ export async function GET(request: NextRequest) {
 
     const decoded: any = jwt.verify(token, process.env.JWT_SECRET || "fallback-secret")
     const { db } = await connectToDatabase()
-    const user = await db.collection("users").findOne({ _id: new ObjectId(decoded.userId) })
+
+    // Look in admin_users collection, not users
+    const user = await db.collection("admin_users").findOne({ _id: new ObjectId(decoded.userId) })
 
     if (!user) {
       return NextResponse.json({ message: "User not found" }, { status: 401 })
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
       user: {
         _id: user._id,
         email: user.email,
+        username: user.username,
         role: user.role,
         permissions: user.permissions || [],
       },

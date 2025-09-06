@@ -23,15 +23,31 @@ export default function AdminLayout({
 
     // Only check auth for dashboard routes
     if (pathname.startsWith("/admin/dashboard")) {
-      const checkAuth = () => {
-        const authCookie = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("jmt_admin_auth="))
-          ?.split("=")[1]
+      const checkAuth = async () => {
+        try {
+          const token = localStorage.getItem("admin-token") || getCookie("admin-token")
 
-        if (authCookie === "true") {
-          setIsAuthenticated(true)
-        } else {
+          if (!token) {
+            setIsAuthenticated(false)
+            router.replace("/admin")
+            return
+          }
+
+          const response = await fetch("/api/admin/auth/verify", {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+
+          if (response.ok) {
+            setIsAuthenticated(true)
+          } else {
+            setIsAuthenticated(false)
+            localStorage.removeItem("admin-token")
+            router.replace("/admin")
+          }
+        } catch (error) {
+          console.error("Auth check error:", error)
           setIsAuthenticated(false)
           router.replace("/admin")
         }
@@ -40,6 +56,14 @@ export default function AdminLayout({
       checkAuth()
     }
   }, [pathname, router])
+
+  const getCookie = (name: string) => {
+    if (typeof document === "undefined") return null
+    const value = `; ${document.cookie}`
+    const parts = value.split(`; ${name}=`)
+    if (parts.length === 2) return parts.pop()?.split(";").shift()
+    return null
+  }
 
   // Login page - no auth check needed
   if (pathname === "/admin") {

@@ -28,17 +28,15 @@ if (process.env.NODE_ENV === "development") {
   clientPromise = client.connect()
 }
 
-// Export a module-scoped MongoClient promise. By doing this in a
-// separate module, the client can be shared across functions.
-export default clientPromise
-
 export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db }> {
   try {
     const client = await clientPromise
-    const db = client.db("jmt_travel") // Your database name
+    const db = client.db("jmt_travel") // Make sure this matches your database name
     return { client, db }
   } catch (error) {
-    console.error("Failed to connect to database:", error)
+    console.error("MongoDB connection error:", error)
     throw error
   }
 }
+
+export default clientPromise
