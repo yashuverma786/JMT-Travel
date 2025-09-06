@@ -7,26 +7,37 @@ import { Progress } from "@/components/ui/progress"
 import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
 
 interface FileUploadProps {
-  onUpload: (url: string) => void
-  currentImage?: string
+  label?: string
+  value?: string
+  onChange: (url: string) => void
+  multiple?: boolean
   accept?: string
   maxSize?: number
 }
 
-export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize = 5 * 1024 * 1024 }: FileUploadProps) {
+export function FileUpload({
+  label = "Upload Image",
+  value,
+  onChange,
+  multiple = false,
+  accept = "image/*",
+  maxSize = 5 * 1024 * 1024, // 5MB
+}: FileUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const uploadToCloudinary = async (file: File) => {
+  const uploadToCloudinary = async (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append("file", file)
-    formData.append("upload_preset", "jmt_travel_preset")
+    formData.append("upload_preset", process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "jmt_travel_preset")
+
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "dvimun8pn"
 
     try {
-      const response = await fetch("https://api.cloudinary.com/v1_1/dvimun8pn/image/upload", {
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
         method: "POST",
         body: formData,
       })
@@ -40,7 +51,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
       return data.secure_url
     } catch (error) {
       console.error("Cloudinary upload error:", error)
-      throw new Error("Failed to upload image. Please check your internet connection and try again.")
+      throw new Error("Failed to upload image. Please try again.")
     }
   }
 
@@ -82,7 +93,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
       setProgress(100)
 
       setTimeout(() => {
-        onUpload(url)
+        onChange(url)
         setProgress(0)
         setUploading(false)
         setError(null)
@@ -123,11 +134,13 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
 
   return (
     <div className="space-y-4">
-      {currentImage && (
+      <label className="block text-sm font-medium text-gray-700">{label}</label>
+
+      {value && (
         <div className="relative">
           <img
-            src={currentImage || "/placeholder.svg"}
-            alt="Current image"
+            src={value || "/placeholder.svg"}
+            alt="Uploaded image"
             className="w-full h-48 object-cover rounded-lg border"
           />
           <Button
@@ -135,7 +148,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
             variant="destructive"
             size="sm"
             className="absolute top-2 right-2"
-            onClick={() => onUpload("")}
+            onClick={() => onChange("")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -166,6 +179,7 @@ export function FileUpload({ onUpload, currentImage, accept = "image/*", maxSize
           onChange={handleFileSelect}
           className="hidden"
           disabled={uploading}
+          multiple={multiple}
         />
 
         {uploading ? (

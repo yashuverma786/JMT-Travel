@@ -8,10 +8,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const { db } = await connectToDatabase()
-
     const destinations = await db.collection("destinations").find({}).sort({ createdAt: -1 }).toArray()
 
-    return NextResponse.json(destinations)
+    return NextResponse.json({ destinations })
   } catch (error) {
     console.error("Error fetching destinations:", error)
     return NextResponse.json({ message: "Error fetching destinations" }, { status: 500 })
@@ -25,6 +24,11 @@ export async function POST(request: NextRequest) {
   try {
     const destinationData = await request.json()
     const { db } = await connectToDatabase()
+
+    // Validate required fields
+    if (!destinationData.name || !destinationData.country) {
+      return NextResponse.json({ message: "Name and country are required" }, { status: 400 })
+    }
 
     const newDestination = {
       ...destinationData,

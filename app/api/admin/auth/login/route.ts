@@ -1,13 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server"
+import { connectToDatabase } from "@/lib/mongodb"
 import bcrypt from "bcryptjs"
 import jwt from "jsonwebtoken"
-import { connectToDatabase } from "@/lib/mongodb"
+
+const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
-
-    console.log("Login attempt for:", email)
 
     if (!email || !password) {
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 })
@@ -15,15 +15,10 @@ export async function POST(request: NextRequest) {
 
     const { db } = await connectToDatabase()
 
-    // Find user in the admin_users collection
+    // Look for user in admin_users collection
     const user = await db.collection("admin_users").findOne({
-      $or: [
-        { email: email },
-        { username: email }, // Allow login with username as well
-      ],
+      $or: [{ email }, { username: email }],
     })
-
-    console.log("User found:", user ? "Yes" : "No")
 
     if (!user) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
@@ -31,52 +26,38 @@ export async function POST(request: NextRequest) {
 
     // Check password
     const isValidPassword = await bcrypt.compare(password, user.password)
-    console.log("Password valid:", isValidPassword)
-
     if (!isValidPassword) {
       return NextResponse.json({ message: "Invalid credentials" }, { status: 401 })
     }
 
-    // Check if user has admin role
-    if (user.role !== "admin" && user.role !== "super_admin") {
-      return NextResponse.json({ message: "Access denied" }, { status: 403 })
-    }
-
-    // Update last login
-    await db.collection("admin_users").updateOne({ _id: user._id }, { $set: { lastLogin: new Date() } })
-
-    // Generate JWT token
+    // Create JWT token
     const token = jwt.sign(
       {
-        userId: user._id.toString(),
+        userId: user._id,
         email: user.email,
         username: user.username,
-        role: user.role,
+        permissions: user.permissions || [],
       },
-      process.env.JWT_SECRET || "fallback-secret",
+      JWT_SECRET,
       { expiresIn: "24h" },
     )
 
-    // Create response with token
+    // Create response with token in cookie
     const response = NextResponse.json({
       message: "Login successful",
       user: {
-        _id: user._id,
+        id: user._id,
         email: user.email,
         username: user.username,
-        role: user.role,
         permissions: user.permissions || [],
       },
-      token,
     })
 
-    // Set HTTP-only cookie
     response.cookies.set("admin-token", token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 24 hours
-      path: "/",
+      sameSite: "strict",
+      maxAge: 86400, // 24 hours
     })
 
     return response

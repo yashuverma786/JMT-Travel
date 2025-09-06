@@ -1,47 +1,38 @@
-import { type NextRequest, NextResponse } from "next/server"
+import { NextResponse, type NextRequest } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const limit = Number.parseInt(searchParams.get("limit") || "10")
     const page = Number.parseInt(searchParams.get("page") || "1")
+    const limit = Number.parseInt(searchParams.get("limit") || "12")
     const category = searchParams.get("category")
-    const destinationName = searchParams.get("destinationName")
-    const search = searchParams.get("search")
+    const destination = searchParams.get("destination")
 
     const { db } = await connectToDatabase()
 
     // Build query
-    const query: any = {}
+    const query: any = { status: "active" }
 
-    if (category) {
-      query.$or = [{ category: { $regex: category, $options: "i" } }, { tripType: { $regex: category, $options: "i" } }]
+    if (category && category !== "all") {
+      query.tripType = { $regex: category, $options: "i" }
     }
 
-    if (destinationName) {
-      query.destinationName = { $regex: destinationName, $options: "i" }
-    }
-
-    if (search) {
+    if (destination) {
       query.$or = [
-        { title: { $regex: search, $options: "i" } },
-        { destinationName: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
+        { destinationName: { $regex: destination, $options: "i" } },
+        { title: { $regex: destination, $options: "i" } },
       ]
     }
 
     const skip = (page - 1) * limit
 
-    const trips = await db
-      .collection("trips")
-      .find(query)
-      .sort({ createdAt: -1, _id: -1 })
-      .skip(skip)
-      .limit(limit)
-      .toArray()
+    const [trips, total] = await Promise.all([
+      db.collection("trips").find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      db.collection("trips").countDocuments(query),
+    ])
 
-    const total = await db.collection("trips").countDocuments(query)
+    const totalPages = Math.ceil(total / limit)
 
     return NextResponse.json({
       trips,
@@ -49,11 +40,11 @@ export async function GET(request: NextRequest) {
         page,
         limit,
         total,
-        pages: Math.ceil(total / limit),
+        pages: totalPages,
       },
     })
   } catch (error) {
     console.error("Error fetching trips:", error)
-    return NextResponse.json({ error: "Failed to fetch trips" }, { status: 500 })
+    return NextResponse.json({ message: "Error fetching trips" }, { status: 500 })
   }
 }

@@ -1,27 +1,21 @@
 import { NextResponse } from "next/server"
-import bcrypt from "bcryptjs"
 import { connectToDatabase } from "@/lib/mongodb"
+import bcrypt from "bcryptjs"
 
-export async function GET() {
+export async function POST() {
   try {
     const { db } = await connectToDatabase()
 
     // Check if admin user already exists
-    const existingAdmin = await db.collection("admin_users").findOne({
-      $or: [{ email: "admin@jmttravel.com" }, { username: "Trip.jmt" }],
+    const existingUser = await db.collection("admin_users").findOne({
+      email: "admin@jmttravel.com",
     })
 
-    if (existingAdmin) {
-      return NextResponse.json({
-        message: "Admin user already exists",
-        credentials: {
-          email: "admin@jmttravel.com",
-          password: "QAZqaz#JMT0202",
-        },
-      })
+    if (existingUser) {
+      return NextResponse.json({ message: "Admin user already exists" }, { status: 400 })
     }
 
-    // Hash the password
+    // Hash password
     const hashedPassword = await bcrypt.hash("QAZqaz#JMT0202", 12)
 
     // Create admin user
@@ -29,7 +23,7 @@ export async function GET() {
       username: "Trip.jmt",
       email: "admin@jmttravel.com",
       password: hashedPassword,
-      role: "super_admin",
+      role: "admin",
       permissions: [
         "manage_trips",
         "manage_destinations",
@@ -41,11 +35,10 @@ export async function GET() {
         "manage_leads",
         "manage_hotels",
         "manage_transfers",
-        "manage_rentals",
         "manage_custom_requests",
       ],
       createdAt: new Date(),
-      lastLogin: null,
+      updatedAt: new Date(),
     }
 
     const result = await db.collection("admin_users").insertOne(adminUser)
@@ -53,13 +46,9 @@ export async function GET() {
     return NextResponse.json({
       message: "Admin user created successfully",
       userId: result.insertedId,
-      credentials: {
-        email: "admin@jmttravel.com",
-        password: "QAZqaz#JMT0202",
-      },
     })
   } catch (error) {
-    console.error("Seed admin error:", error)
-    return NextResponse.json({ message: "Failed to create admin user" }, { status: 500 })
+    console.error("Error creating admin user:", error)
+    return NextResponse.json({ message: "Error creating admin user" }, { status: 500 })
   }
 }
