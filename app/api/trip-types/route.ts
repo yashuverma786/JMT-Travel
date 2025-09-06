@@ -5,11 +5,12 @@ export async function GET() {
   try {
     const { db } = await connectToDatabase()
 
-    const tripTypes = await db
-      .collection("tripTypes")
-      .find({ status: { $ne: "inactive" } })
-      .sort({ name: 1 })
-      .toArray()
+    // Try both collection names for compatibility
+    let tripTypes = await db.collection("trip_types").find({}).sort({ name: 1 }).toArray()
+
+    if (tripTypes.length === 0) {
+      tripTypes = await db.collection("tripTypes").find({}).sort({ name: 1 }).toArray()
+    }
 
     return NextResponse.json({ tripTypes })
   } catch (error) {

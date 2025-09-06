@@ -11,15 +11,19 @@ import { MapPin, Calendar, Star, Clock } from "lucide-react"
 interface Trip {
   _id: string
   title: string
-  destination: string
-  imageUrls: string[]
-  price: number
+  destinationName?: string
+  imageUrls?: string[]
+  featuredImage?: string
+  galleryImages?: string[]
+  adultPrice?: number
   salePrice?: number
-  durationDays: number
-  durationNights: number
+  durationDays?: number
+  durationNights?: number
   rating?: number
   activities?: string[]
   category?: string
+  tripType?: string
+  isTrending?: boolean
 }
 
 export default function FeaturedTripsSection() {
@@ -83,27 +87,44 @@ export default function FeaturedTripsSection() {
         {trips.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {trips.map((trip) => {
-              const displayPrice = trip.salePrice && trip.salePrice < trip.price ? trip.salePrice : trip.price
-              const hasDiscount = trip.salePrice && trip.salePrice < trip.price
-              const discountPercent = hasDiscount ? calculateDiscount(trip.price, trip.salePrice!) : 0
+              const adultPrice = typeof trip.adultPrice === "number" ? trip.adultPrice : 0
+              const salePrice = typeof trip.salePrice === "number" ? trip.salePrice : adultPrice
+              const displayPrice = salePrice > 0 ? salePrice : adultPrice
+              const hasDiscount = adultPrice > salePrice && salePrice > 0
+              const discountPercent = hasDiscount ? calculateDiscount(adultPrice, salePrice) : 0
+
+              const imageUrl =
+                trip.featuredImage ||
+                (trip.imageUrls && trip.imageUrls[0]) ||
+                (trip.galleryImages && trip.galleryImages[0]) ||
+                "/placeholder.svg?height=250&width=400&text=Beautiful+Destination"
 
               return (
                 <Card key={trip._id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
                   <div className="relative">
                     <Image
-                      src={trip.imageUrls?.[0] || "/placeholder.svg?height=250&width=400&text=Beautiful+Destination"}
+                      src={imageUrl || "/placeholder.svg"}
                       alt={trip.title}
                       width={400}
                       height={250}
                       className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg?height=250&width=400&text=Beautiful+Destination"
+                      }}
                     />
-                    {hasDiscount && (
+                    {hasDiscount && discountPercent > 0 && (
                       <Badge className="absolute top-3 right-3 bg-red-500 text-white font-semibold">
                         {discountPercent}% OFF
                       </Badge>
                     )}
-                    {trip.category && (
-                      <Badge className="absolute top-3 left-3 bg-blue-600 text-white">{trip.category}</Badge>
+                    {trip.isTrending && (
+                      <Badge className="absolute top-3 left-3 bg-green-600 text-white">Trending</Badge>
+                    )}
+                    {(trip.category || trip.tripType) && (
+                      <Badge className="absolute bottom-3 right-3 bg-blue-600 text-white">
+                        {trip.category || trip.tripType}
+                      </Badge>
                     )}
                   </div>
 
@@ -112,13 +133,14 @@ export default function FeaturedTripsSection() {
 
                     <div className="flex items-center text-gray-600 mb-2">
                       <MapPin className="h-4 w-4 mr-2" />
-                      <span className="text-sm">{trip.destination}</span>
+                      <span className="text-sm">{trip.destinationName || "Multiple Destinations"}</span>
                     </div>
 
                     <div className="flex items-center text-gray-600 mb-3">
                       <Clock className="h-4 w-4 mr-2" />
                       <span className="text-sm">
-                        {trip.durationDays} Days / {trip.durationNights} Nights
+                        {trip.durationDays || 1} Days /{" "}
+                        {trip.durationNights || (trip.durationDays ? trip.durationDays - 1 : 0)} Nights
                       </span>
                     </div>
 
@@ -140,7 +162,7 @@ export default function FeaturedTripsSection() {
                       </div>
                     )}
 
-                    {trip.rating && (
+                    {trip.rating && trip.rating > 0 && (
                       <div className="flex items-center mb-3">
                         <Star className="h-4 w-4 text-yellow-500 mr-1" />
                         <span className="text-sm font-medium">{trip.rating}</span>
@@ -150,11 +172,17 @@ export default function FeaturedTripsSection() {
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-baseline">
-                        <span className="text-2xl font-bold text-green-600">₹{displayPrice.toLocaleString()}</span>
-                        {hasDiscount && (
-                          <span className="text-sm text-gray-500 line-through ml-2">
-                            ₹{trip.price.toLocaleString()}
-                          </span>
+                        {displayPrice > 0 ? (
+                          <>
+                            <span className="text-2xl font-bold text-green-600">₹{displayPrice.toLocaleString()}</span>
+                            {hasDiscount && (
+                              <span className="text-sm text-gray-500 line-through ml-2">
+                                ₹{adultPrice.toLocaleString()}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-lg font-bold text-blue-600">Price on request</span>
                         )}
                       </div>
                       <Button asChild className="bg-blue-600 hover:bg-blue-700">
@@ -179,6 +207,12 @@ export default function FeaturedTripsSection() {
             </div>
           </div>
         )}
+
+        <div className="text-center mt-12">
+          <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600">
+            <Link href="/trips">View All Trips</Link>
+          </Button>
+        </div>
       </div>
     </section>
   )

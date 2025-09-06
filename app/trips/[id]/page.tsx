@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { ArrowLeft, MapPin, Clock, Users, Star, Calendar, Camera, Download, Phone, Mail } from "lucide-react"
+import { ArrowLeft, MapPin, Clock, Users, Star, Calendar, Camera, Download, Phone, Mail, Check, X } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
 interface Trip {
@@ -78,7 +78,8 @@ export default function TripDetailsPage() {
         setTrip(data.trip)
       } catch (error) {
         console.error("Error fetching trip:", error)
-        notFound()
+        // Don't call notFound() here, just show error state
+        setTrip(null)
       } finally {
         setLoading(false)
       }
@@ -92,24 +93,52 @@ export default function TripDetailsPage() {
 
     try {
       setDownloadingPDF(true)
-      const response = await fetch(`/api/trips/${trip._id}/brochure`, {
-        method: "POST",
-      })
 
-      if (!response.ok) throw new Error("Failed to generate brochure")
+      // Simple client-side PDF generation using jsPDF
+      const { jsPDF } = await import("jspdf")
+      const doc = new jsPDF()
 
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
-      const a = document.createElement("a")
-      a.style.display = "none"
-      a.href = url
-      a.download = `${trip.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}_brochure.pdf`
-      document.body.appendChild(a)
-      a.click()
-      window.URL.revokeObjectURL(url)
-      document.body.removeChild(a)
+      // Add content to PDF
+      doc.setFontSize(20)
+      doc.text(trip.title || "Trip Details", 20, 30)
+
+      doc.setFontSize(12)
+      let yPos = 50
+
+      if (trip.destinationName) {
+        doc.text(`Destination: ${trip.destinationName}`, 20, yPos)
+        yPos += 10
+      }
+
+      if (trip.durationDays) {
+        doc.text(
+          `Duration: ${trip.durationDays} Days / ${trip.durationNights || trip.durationDays - 1} Nights`,
+          20,
+          yPos,
+        )
+        yPos += 10
+      }
+
+      const displayPrice = trip.salePrice || trip.adultPrice
+      if (displayPrice && displayPrice > 0) {
+        doc.text(`Price: ₹${displayPrice.toLocaleString("en-IN")} per person`, 20, yPos)
+        yPos += 15
+      }
+
+      if (trip.description || trip.overview) {
+        doc.text("Description:", 20, yPos)
+        yPos += 10
+        const description = trip.description || trip.overview || ""
+        const splitText = doc.splitTextToSize(description, 170)
+        doc.text(splitText, 20, yPos)
+        yPos += splitText.length * 5 + 10
+      }
+
+      // Save the PDF
+      const fileName = `${trip.title?.replace(/[^a-zA-Z0-9]/g, "_") || "trip"}_brochure.pdf`
+      doc.save(fileName)
     } catch (error) {
-      console.error("Error downloading brochure:", error)
+      console.error("Error generating PDF:", error)
       alert("Failed to download brochure. Please try again.")
     } finally {
       setDownloadingPDF(false)
@@ -138,7 +167,17 @@ export default function TripDetailsPage() {
   }
 
   if (!trip) {
-    return notFound()
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Trip Not Found</h1>
+          <p className="text-gray-600 mb-6">The trip you're looking for doesn't exist or has been removed.</p>
+          <Button asChild>
+            <Link href="/trips">Back to Trips</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   // Safe price handling
@@ -154,8 +193,7 @@ export default function TripDetailsPage() {
 
   // Safe image handling
   const images = [trip.featuredImage, ...(trip.imageUrls || []), ...(trip.galleryImages || [])].filter(Boolean)
-
-  const mainImage = images[selectedImage] || "/diverse-travelers-world-map.png"
+  const mainImage = images[selectedImage] || "/placeholder.svg?height=400&width=600&text=Trip+Image"
 
   // Safe duration handling
   const duration = trip.durationDays || 1
@@ -180,7 +218,16 @@ export default function TripDetailsPage() {
             {/* Image Gallery */}
             <div className="space-y-4">
               <div className="relative h-96 overflow-hidden rounded-lg">
-                <Image src={mainImage || "/placeholder.svg"} alt={trip.title} fill className="object-cover" />
+                <Image
+                  src={mainImage || "/placeholder.svg"}
+                  alt={trip.title}
+                  fill
+                  className="object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = "/placeholder.svg?height=400&width=600&text=Trip+Image"
+                  }}
+                />
                 {trip.isTrending && <Badge className="absolute top-4 left-4 bg-green-500 text-white">Trending</Badge>}
                 {hasDiscount && discountPercentage > 0 && (
                   <Badge className="absolute top-4 right-4 bg-red-500 text-white">{discountPercentage}% OFF</Badge>
@@ -202,6 +249,10 @@ export default function TripDetailsPage() {
                         alt={`Gallery ${index + 1}`}
                         fill
                         className="object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = "/placeholder.svg"
+                        }}
                       />
                     </button>
                   ))}
@@ -274,7 +325,9 @@ export default function TripDetailsPage() {
                   </CardHeader>
                   <CardContent>
                     <p className="text-gray-700 leading-relaxed">
-                      {trip.overview || trip.description || "No overview available for this trip."}
+                      {trip.overview ||
+                        trip.description ||
+                        "Experience an amazing journey with this carefully crafted travel package. Contact us for detailed information about this trip."}
                     </p>
                   </CardContent>
                 </Card>
@@ -344,6 +397,7 @@ export default function TripDetailsPage() {
                 ) : (
                   <Card>
                     <CardContent className="p-8 text-center">
+                      <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">Detailed itinerary will be provided upon booking.</p>
                     </CardContent>
                   </Card>
@@ -354,14 +408,17 @@ export default function TripDetailsPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-green-600">Inclusions</CardTitle>
+                      <CardTitle className="text-green-600 flex items-center gap-2">
+                        <Check className="h-5 w-5" />
+                        Inclusions
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {trip.inclusions && trip.inclusions.length > 0 ? (
                         <ul className="space-y-2">
                           {trip.inclusions.map((inclusion, index) => (
                             <li key={index} className="flex items-start gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                              <Check className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                               <span className="text-sm">{inclusion}</span>
                             </li>
                           ))}
@@ -374,14 +431,17 @@ export default function TripDetailsPage() {
 
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-red-600">Exclusions</CardTitle>
+                      <CardTitle className="text-red-600 flex items-center gap-2">
+                        <X className="h-5 w-5" />
+                        Exclusions
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       {trip.exclusions && trip.exclusions.length > 0 ? (
                         <ul className="space-y-2">
                           {trip.exclusions.map((exclusion, index) => (
                             <li key={index} className="flex items-start gap-2">
-                              <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0" />
+                              <X className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
                               <span className="text-sm">{exclusion}</span>
                             </li>
                           ))}
@@ -408,6 +468,10 @@ export default function TripDetailsPage() {
                           alt={`Gallery ${index + 1}`}
                           fill
                           className="object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "/placeholder.svg"
+                          }}
                         />
                       </div>
                     ))}
@@ -446,6 +510,7 @@ export default function TripDetailsPage() {
                         )}
                       </div>
                       <p className="text-sm text-gray-600">per person</p>
+                      {hasDiscount && <Badge className="bg-red-500 text-white">Save {discountPercentage}%</Badge>}
                     </div>
                   ) : (
                     <div>
@@ -459,6 +524,7 @@ export default function TripDetailsPage() {
 
                 <div className="space-y-3">
                   <Button className="w-full bg-orange-500 hover:bg-orange-600" size="lg">
+                    <Phone className="h-4 w-4 mr-2" />
                     Book Now
                   </Button>
                   <Button
@@ -469,6 +535,10 @@ export default function TripDetailsPage() {
                   >
                     <Download className="h-4 w-4 mr-2" />
                     {downloadingPDF ? "Generating..." : "Download Brochure"}
+                  </Button>
+                  <Button variant="outline" className="w-full bg-transparent">
+                    <Mail className="h-4 w-4 mr-2" />
+                    Get Quote
                   </Button>
                 </div>
               </CardContent>
@@ -501,7 +571,7 @@ export default function TripDetailsPage() {
                 {trip.difficulty && (
                   <div className="flex justify-between">
                     <span className="text-gray-600">Difficulty:</span>
-                    <span className="font-medium">{trip.difficulty}</span>
+                    <span className="font-medium capitalize">{trip.difficulty}</span>
                   </div>
                 )}
                 {trip.bestTimeToVisit && (
@@ -514,6 +584,12 @@ export default function TripDetailsPage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Departure:</span>
                     <span className="font-medium">{trip.departureCity}</span>
+                  </div>
+                )}
+                {trip.tripType && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Category:</span>
+                    <span className="font-medium">{trip.tripType}</span>
                   </div>
                 )}
               </CardContent>
