@@ -14,7 +14,7 @@ export const metadata: Metadata = {
   title: "JMT Travel - Holiday Packages & Travel Booking",
   description:
     "Book holiday packages, hotels, flights and more with JMT Travel. Best deals on domestic and international travel.",
-    generator: 'v0.dev'
+    generator: 'v0.app'
 }
 
 export default function RootLayout({

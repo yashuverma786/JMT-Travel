@@ -36,12 +36,17 @@ export default function CountryPackagesPage() {
     const fetchDestinationData = async () => {
       try {
         setLoading(true)
+
+        // Fetch destinations
         const destinationsRes = await fetch("/api/destinations")
         if (!destinationsRes.ok) throw new Error("Failed to fetch destinations")
         const { destinations } = await destinationsRes.json()
 
+        // Find destination by slug
         const currentDestination = destinations.find(
-          (d: Destination) => d.name.toLowerCase().replace(/ /g, "-") === countrySlug,
+          (d: Destination) =>
+            d.name.toLowerCase().replace(/[^a-z0-9]/g, "-") === countrySlug ||
+            d.name.toLowerCase().replace(/ /g, "-") === countrySlug,
         )
 
         if (!currentDestination) {
@@ -50,12 +55,14 @@ export default function CountryPackagesPage() {
         }
         setDestination(currentDestination)
 
-        const tripsRes = await fetch(`/api/trips?destinationName=${currentDestination.name}`)
+        // Fetch trips for this destination
+        const tripsRes = await fetch(`/api/trips?destinationName=${encodeURIComponent(currentDestination.name)}`)
         if (!tripsRes.ok) throw new Error("Failed to fetch trips")
         const { trips: fetchedTrips } = await tripsRes.json()
-        setTrips(fetchedTrips)
+        setTrips(fetchedTrips || [])
       } catch (error) {
         console.error("Error fetching destination page data:", error)
+        setTrips([])
       } finally {
         setLoading(false)
       }
@@ -96,9 +103,10 @@ export default function CountryPackagesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Hero Section */}
       <div className="relative h-96 overflow-hidden">
         <Image
-          src={destination.imageUrl || "/placeholder.svg?height=400&width=800"}
+          src={destination.imageUrl || "/placeholder.svg?height=400&width=800&query=destination"}
           alt={destination.name}
           fill
           className="object-cover"
@@ -107,63 +115,83 @@ export default function CountryPackagesPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center text-white">
             <h1 className="text-4xl md:text-6xl font-bold mb-4">{destination.name}</h1>
-            <p className="text-lg md:text-xl mb-6 max-w-3xl">{destination.description}</p>
+            <p className="text-lg md:text-xl mb-6 max-w-3xl">
+              {destination.description || `Explore the beautiful destination of ${destination.name}`}
+            </p>
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               <div className="flex items-center gap-1">
                 <MapPin className="h-4 w-4" />
                 <span>{trips.length} Packages Available</span>
               </div>
+              {destination.country && (
+                <div className="flex items-center gap-1">
+                  <span>{destination.country}</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
 
       <div className="container py-8">
+        {/* Back Button */}
         <div className="mb-6">
           <Button variant="outline" asChild>
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/destinations" className="flex items-center gap-2">
               <ArrowLeft className="h-4 w-4" />
-              Back to Home
+              Back to Destinations
             </Link>
           </Button>
         </div>
 
+        {/* Page Title */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4">Packages in {destination.name}</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            Travel Packages in {destination.name} ({trips.length})
+          </h2>
+          {destination.description && <p className="text-gray-600 max-w-3xl">{destination.description}</p>}
         </div>
 
+        {/* Trips Grid */}
         {trips.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             {trips.map((trip) => (
               <TripCard key={trip._id} trip={trip} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
-            <p className="text-gray-500 mb-4">No packages found for {destination.name}.</p>
+          <div className="text-center py-12 mb-12">
+            <div className="text-gray-500 mb-4">No packages found for {destination.name} at the moment.</div>
+            <p className="text-sm text-gray-400 mb-6">
+              We're constantly adding new destinations and packages. Check back soon!
+            </p>
+            <Button asChild>
+              <Link href="/custom-packages">Request Custom Package</Link>
+            </Button>
           </div>
         )}
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Service Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="p-6 text-center">
               <Plane className="h-8 w-8 text-blue-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Flight Bookings</h3>
-              <p className="text-sm text-gray-600">We can arrange flights to {destination.name}</p>
+              <p className="text-sm text-gray-600">We can arrange flights to {destination.name} with the best deals</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
               <Hotel className="h-8 w-8 text-green-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Accommodation</h3>
-              <p className="text-sm text-gray-600">From budget to luxury hotels</p>
+              <p className="text-sm text-gray-600">From budget stays to luxury hotels in {destination.name}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-6 text-center">
               <Car className="h-8 w-8 text-orange-500 mx-auto mb-3" />
               <h3 className="font-semibold mb-2">Transportation</h3>
-              <p className="text-sm text-gray-600">Private cabs and transfers included</p>
+              <p className="text-sm text-gray-600">Private cabs and transfers included in all packages</p>
             </CardContent>
           </Card>
         </div>
