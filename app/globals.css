@@ -168,12 +168,12 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
+  background: #888;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #555;
 }
 
 /* Responsive utilities */
@@ -182,11 +182,20 @@
     padding-left: 1rem;
     padding-right: 1rem;
   }
+  .mobile-hidden {
+    display: none;
+  }
 }
 
 @media (max-width: 640px) {
   .responsive-text {
     font-size: 0.875rem;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-hidden {
+    display: none;
   }
 }
 
@@ -209,7 +218,7 @@
 
 .card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 }
 
 /* Button animations */
@@ -247,12 +256,12 @@
 }
 
 /* Image fade in */
-.image-fade-in {
+.img-fade {
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-.image-fade-in.loaded {
+.img-fade.loaded {
   opacity: 1;
 }
 
