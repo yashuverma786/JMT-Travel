@@ -23,16 +23,13 @@ function ModalPortal({ children, isOpen }: { children: React.ReactNode; isOpen: 
 
   useEffect(() => {
     if (isOpen) {
-      // Prevent body scroll when modal is open, but allow dropdowns to escape
       document.body.style.overflow = "hidden"
-      document.body.style.paddingRight = "0px" // Prevent layout shift
+      document.body.style.paddingRight = "0px"
     } else {
-      // Restore body scroll when modal is closed
       document.body.style.overflow = "unset"
       document.body.style.paddingRight = "0px"
     }
 
-    // Cleanup on unmount
     return () => {
       document.body.style.overflow = "unset"
       document.body.style.paddingRight = "0px"
@@ -61,7 +58,6 @@ export default function SearchModal() {
   }, [])
 
   useEffect(() => {
-    // Handle escape key
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen) {
         setIsOpen(false)
@@ -115,7 +111,7 @@ export default function SearchModal() {
         <AnimatePresence mode="wait">
           {isOpen && (
             <div
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 safe-area-inset"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
               style={{
                 position: "fixed",
                 top: 0,
@@ -123,10 +119,6 @@ export default function SearchModal() {
                 right: 0,
                 bottom: 0,
                 zIndex: 9999,
-                paddingTop: "env(safe-area-inset-top)",
-                paddingBottom: "env(safe-area-inset-bottom)",
-                paddingLeft: "env(safe-area-inset-left)",
-                paddingRight: "env(safe-area-inset-right)",
               }}
             >
               {/* Backdrop */}
@@ -157,18 +149,16 @@ export default function SearchModal() {
                   stiffness: 300,
                   duration: 0.3,
                 }}
-                className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4" // Changed overflow-hidden to overflow-y-auto
+                className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto mx-4"
                 style={{
                   position: "relative",
-                  zIndex: 1,
+                  zIndex: 10000,
                 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <Card className="shadow-2xl border-0 bg-white backdrop-blur-lg overflow-visible">
-                  {" "}
-                  {/* Changed overflow-hidden to overflow-visible */}
+                <Card className="shadow-2xl border-0 bg-white backdrop-blur-lg">
                   {/* Close Button */}
-                  <div className="absolute top-4 right-4 z-10">
+                  <div className="absolute top-4 right-4 z-[10001]">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -179,10 +169,11 @@ export default function SearchModal() {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  {/* Scrollable Content */}
+
+                  {/* Content */}
                   <div className="max-h-[90vh] overflow-y-auto">
                     <Tabs defaultValue="destinations" className="w-full" onValueChange={setActiveTab}>
-                      <TabsList className="grid w-full grid-cols-3 rounded-none h-auto bg-gradient-to-r from-gray-50 to-gray-100 p-2 sticky top-0 z-10">
+                      <TabsList className="grid w-full grid-cols-3 rounded-none h-auto bg-gradient-to-r from-gray-50 to-gray-100 p-2 sticky top-0 z-[10000]">
                         <TabsTrigger
                           value="destinations"
                           className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white py-3 text-sm sm:text-base min-h-[44px]"
@@ -258,7 +249,7 @@ export default function SearchModal() {
                                 <SelectTrigger className="h-12 border-2 border-gray-200 hover:border-purple-300 focus:border-purple-500 transition-all duration-300 rounded-xl text-base">
                                   <SelectValue placeholder="Select date" />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[10002]">
                                   <SelectItem value="june">June 2024</SelectItem>
                                   <SelectItem value="july">July 2024</SelectItem>
                                   <SelectItem value="august">August 2024</SelectItem>
@@ -276,7 +267,7 @@ export default function SearchModal() {
                                 <SelectTrigger className="h-12 border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-all duration-300 rounded-xl text-base">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[10002]">
                                   <SelectItem value="1">1 Traveler</SelectItem>
                                   <SelectItem value="2">2 Travelers</SelectItem>
                                   <SelectItem value="3">3 Travelers</SelectItem>
@@ -365,7 +356,7 @@ export default function SearchModal() {
                                 <SelectTrigger className="h-12 border-2 border-gray-200 hover:border-orange-300 focus:border-orange-500 transition-all duration-300 rounded-xl text-base">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[10002]">
                                   <SelectItem value="water">Water Sports</SelectItem>
                                   <SelectItem value="adventure">Adventure Sports</SelectItem>
                                   <SelectItem value="cultural">Cultural Activities</SelectItem>
@@ -398,7 +389,7 @@ export default function SearchModal() {
                                 <SelectTrigger className="h-12 border-2 border-gray-200 hover:border-green-300 focus:border-green-500 transition-all duration-300 rounded-xl text-base">
                                   <SelectValue />
                                 </SelectTrigger>
-                                <SelectContent>
+                                <SelectContent className="z-[10002]">
                                   <SelectItem value="solo">Solo (1 person)</SelectItem>
                                   <SelectItem value="small">Small (2-5 people)</SelectItem>
                                   <SelectItem value="medium">Medium (6-15 people)</SelectItem>
