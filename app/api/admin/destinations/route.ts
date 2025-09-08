@@ -1,47 +1,44 @@
-import { NextResponse, type NextRequest } from "next/server"
+import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
-import { checkPermissions } from "@/lib/auth-middleware"
+import { authenticateAdmin } from "@/lib/auth-middleware"
 
 export async function GET(request: NextRequest) {
-  const authCheck = await checkPermissions(request, ["manage_destinations"])
-  if (authCheck) return authCheck
-
   try {
     const { db } = await connectToDatabase()
-    const destinations = await db.collection("destinations").find({}).sort({ createdAt: -1 }).toArray()
+    const destinations = await db.collection("destinations").find({}).toArray()
 
-    return NextResponse.json({ destinations })
+    return NextResponse.json(destinations)
   } catch (error) {
-    console.error("Error fetching destinations:", error)
-    return NextResponse.json({ message: "Error fetching destinations" }, { status: 500 })
+    console.error("Get destinations error:", error)
+    return NextResponse.json({ message: "Failed to fetch destinations" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
-  const authCheck = await checkPermissions(request, ["manage_destinations"])
-  if (authCheck) return authCheck
-
   try {
-    const destinationData = await request.json()
+    const user = await authenticateAdmin(request)
+    if (!user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+    }
+
+    const data = await request.json()
     const { db } = await connectToDatabase()
 
-    // Validate required fields
-    if (!destinationData.name || !destinationData.country) {
-      return NextResponse.json({ message: "Name and country are required" }, { status: 400 })
-    }
-
-    const newDestination = {
-      ...destinationData,
+    const destination = {
+      ...data,
       createdAt: new Date(),
       updatedAt: new Date(),
+      createdBy: user._id,
     }
 
-    const result = await db.collection("destinations").insertOne(newDestination)
-    const createdDestination = await db.collection("destinations").findOne({ _id: result.insertedId })
+    const result = await db.collection("destinations").insertOne(destination)
 
-    return NextResponse.json(createdDestination, { status: 201 })
+    return NextResponse.json({
+      message: "Destination created successfully",
+      id: result.insertedId,
+    })
   } catch (error) {
-    console.error("Error creating destination:", error)
-    return NextResponse.json({ message: "Error creating destination" }, { status: 500 })
+    console.error("Create destination error:", error)
+    return NextResponse.json({ message: "Failed to create destination" }, { status: 500 })
   }
 }

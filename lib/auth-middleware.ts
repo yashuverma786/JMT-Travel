@@ -3,7 +3,15 @@ import jwt from "jsonwebtoken"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
-const JWT_SECRET = process.env.JWT_SECRET || "your-secret-key"
+const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key-jmt-travel-2024"
+
+export interface AuthenticatedUser {
+  _id: string
+  email: string
+  username: string
+  role: string
+  permissions: string[]
+}
 
 export async function checkPermissions(request: NextRequest, requiredPermissions: string[] = []) {
   try {
@@ -46,6 +54,47 @@ export async function checkPermissions(request: NextRequest, requiredPermissions
   }
 }
 
+export async function authenticateAdmin(request: NextRequest): Promise<AuthenticatedUser | null> {
+  try {
+    // Get token from Authorization header or cookies
+    const authHeader = request.headers.get("authorization")
+    let token = authHeader?.replace("Bearer ", "")
+
+    if (!token) {
+      token = request.cookies.get("admin-token")?.value
+    }
+
+    if (!token) {
+      return null
+    }
+
+    // Verify JWT token
+    const decoded = jwt.verify(token, JWT_SECRET) as any
+
+    const { db } = await connectToDatabase()
+
+    // Find admin user
+    const admin = await db.collection("admin_users").findOne({
+      _id: new ObjectId(decoded.userId),
+    })
+
+    if (!admin) {
+      return null
+    }
+
+    return {
+      _id: admin._id.toString(),
+      email: admin.email,
+      username: admin.username || admin.email,
+      role: admin.role || "admin",
+      permissions: admin.permissions || ["all"],
+    }
+  } catch (error) {
+    console.error("Authentication error:", error)
+    return null
+  }
+}
+
 export async function getAuthenticatedUser(request: NextRequest) {
   try {
     const token = request.cookies.get("admin-token")?.value
@@ -64,5 +113,20 @@ export async function getAuthenticatedUser(request: NextRequest) {
   } catch (error) {
     console.error("Get authenticated user error:", error)
     return null
+  }
+}
+
+export function requireAuth(handler: (request: NextRequest, user: AuthenticatedUser) => Promise<Response>) {
+  return async (request: NextRequest) => {
+    const user = await authenticateAdmin(request)
+
+    if (!user) {
+      return new Response(JSON.stringify({ message: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json" },
+      })
+    }
+
+    return handler(request, user)
   }
 }
