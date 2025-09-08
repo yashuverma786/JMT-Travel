@@ -2,113 +2,32 @@
 
 import type React from "react"
 import { useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
-import { Upload, X, ImageIcon, AlertCircle } from "lucide-react"
+import { Button } from "./button"
+import { Input } from "./input"
+import { Label } from "./label"
+import { Upload, X, ImageIcon } from "lucide-react"
 
 interface FileUploadProps {
-  label?: string
-  value?: string | string[]
-  onChange: (url: string | string[]) => void
-  multiple?: boolean
+  onFileSelect: (file: File | null) => void
   accept?: string
   maxSize?: number
+  className?: string
+  value?: string
+  placeholder?: string
 }
 
 export function FileUpload({
-  label = "Upload Image",
-  value,
-  onChange,
-  multiple = false,
+  onFileSelect,
   accept = "image/*",
   maxSize = 5 * 1024 * 1024, // 5MB
+  className = "",
+  value,
+  placeholder = "Choose file or drag and drop",
 }: FileUploadProps) {
-  const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
   const [dragActive, setDragActive] = useState(false)
+  const [preview, setPreview] = useState<string | null>(value || null)
   const [error, setError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const uploadToCloudinary = async (file: File): Promise<string> => {
-    const formData = new FormData()
-    formData.append("file", file)
-    formData.append("upload_preset", "ml_default") // Use default preset
-
-    try {
-      const response = await fetch(`https://api.cloudinary.com/v1_1/dvimun8pn/image/upload`, {
-        method: "POST",
-        body: formData,
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error?.message || `Upload failed: ${response.statusText}`)
-      }
-
-      const data = await response.json()
-      return data.secure_url
-    } catch (error) {
-      console.error("Cloudinary upload error:", error)
-      throw new Error("Failed to upload image. Please try again.")
-    }
-  }
-
-  const handleFileUpload = async (files: FileList) => {
-    if (!files || files.length === 0) return
-
-    setError(null)
-    setUploading(true)
-    setProgress(0)
-
-    try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        // Validate file type
-        if (!file.type.startsWith("image/")) {
-          throw new Error("Please select image files only (JPG, PNG, GIF)")
-        }
-
-        // Validate file size
-        if (file.size > maxSize) {
-          throw new Error(`File size must be less than ${Math.round(maxSize / 1024 / 1024)}MB`)
-        }
-
-        return uploadToCloudinary(file)
-      })
-
-      // Simulate progress
-      const progressInterval = setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval)
-            return 90
-          }
-          return prev + 10
-        })
-      }, 200)
-
-      const urls = await Promise.all(uploadPromises)
-
-      clearInterval(progressInterval)
-      setProgress(100)
-
-      setTimeout(() => {
-        if (multiple) {
-          const currentUrls = Array.isArray(value) ? value : []
-          onChange([...currentUrls, ...urls])
-        } else {
-          onChange(urls[0])
-        }
-        setProgress(0)
-        setUploading(false)
-        setError(null)
-      }, 500)
-    } catch (error) {
-      console.error("Upload error:", error)
-      setError(error instanceof Error ? error.message : "Upload failed. Please try again.")
-      setUploading(false)
-      setProgress(0)
-    }
-  }
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -125,104 +44,122 @@ export function FileUpload({
     e.stopPropagation()
     setDragActive(false)
 
-    if (e.dataTransfer.files) {
-      handleFileUpload(e.dataTransfer.files)
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0])
     }
   }
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      handleFileUpload(e.target.files)
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault()
+    if (e.target.files && e.target.files[0]) {
+      handleFile(e.target.files[0])
     }
   }
 
-  const removeImage = (urlToRemove: string) => {
-    if (multiple && Array.isArray(value)) {
-      onChange(value.filter((url) => url !== urlToRemove))
-    } else {
-      onChange("")
+  const handleFile = (file: File) => {
+    setError(null)
+
+    // Validate file size
+    if (file.size > maxSize) {
+      setError(`File size must be less than ${maxSize / 1024 / 1024}MB`)
+      return
+    }
+
+    // Validate file type
+    if (accept && !file.type.match(accept.replace("*", ".*"))) {
+      setError(`File type must be ${accept}`)
+      return
+    }
+
+    // Create preview for images
+    if (file.type.startsWith("image/")) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+
+    onFileSelect(file)
+  }
+
+  const removeFile = () => {
+    setPreview(null)
+    setError(null)
+    onFileSelect(null)
+    if (inputRef.current) {
+      inputRef.current.value = ""
     }
   }
 
-  const currentValue = Array.isArray(value) ? value : value ? [value] : []
+  const openFileDialog = () => {
+    inputRef.current?.click()
+  }
 
   return (
-    <div className="space-y-4">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-
-      {currentValue.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-          {currentValue.map((url, index) => (
-            <div key={index} className="relative">
-              <img
-                src={url || "/placeholder.svg"}
-                alt={`Uploaded image ${index + 1}`}
-                className="w-full h-32 object-cover rounded-lg border"
-              />
-              <Button
-                type="button"
-                variant="destructive"
-                size="sm"
-                className="absolute top-2 right-2 h-6 w-6 p-0"
-                onClick={() => removeImage(url)}
-              >
-                <X className="h-3 w-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
-          <AlertCircle className="h-4 w-4" />
-          <span className="text-sm">{error}</span>
-        </div>
-      )}
-
+    <div className={`w-full ${className}`}>
       <div
-        className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-          dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
-        } ${uploading ? "pointer-events-none opacity-50" : "cursor-pointer hover:border-gray-400"}`}
+        className={`relative border-2 border-dashed rounded-lg p-6 transition-colors ${
+          dragActive
+            ? "border-blue-400 bg-blue-50"
+            : error
+              ? "border-red-300 bg-red-50"
+              : "border-gray-300 hover:border-gray-400"
+        }`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
-        onClick={() => fileInputRef.current?.click()}
       >
-        <input
-          ref={fileInputRef}
+        <Input
+          ref={inputRef}
           type="file"
           accept={accept}
-          onChange={handleFileSelect}
-          className="hidden"
-          disabled={uploading}
-          multiple={multiple}
+          onChange={handleChange}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
         />
 
-        {uploading ? (
-          <div className="space-y-2">
-            <div className="animate-spin mx-auto h-8 w-8 border-2 border-blue-500 border-t-transparent rounded-full" />
-            <p className="text-sm text-gray-600">Uploading...</p>
-            <Progress value={progress} className="w-full max-w-xs mx-auto" />
+        {preview ? (
+          <div className="relative">
+            <img src={preview || "/placeholder.svg"} alt="Preview" className="max-w-full max-h-48 mx-auto rounded-lg" />
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              className="absolute top-2 right-2"
+              onClick={removeFile}
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         ) : (
-          <div className="space-y-2">
-            <ImageIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <div>
-              <p className="text-sm font-medium">Click to upload or drag and drop</p>
-              <p className="text-xs text-gray-500">PNG, JPG, GIF up to {Math.round(maxSize / 1024 / 1024)}MB</p>
+          <div className="text-center">
+            <div className="mx-auto h-12 w-12 text-gray-400">
+              {accept.includes("image") ? <ImageIcon className="h-12 w-12" /> : <Upload className="h-12 w-12" />}
             </div>
-            <Button type="button" variant="outline" size="sm">
-              <Upload className="h-4 w-4 mr-2" />
-              Choose File{multiple ? "s" : ""}
-            </Button>
+            <div className="mt-4">
+              <Label className="cursor-pointer">
+                <span className="mt-2 block text-sm font-medium text-gray-900">{placeholder}</span>
+              </Label>
+              <p className="mt-2 text-xs text-gray-500">
+                {accept} up to {maxSize / 1024 / 1024}MB
+              </p>
+            </div>
           </div>
         )}
       </div>
+
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+      {preview && (
+        <div className="mt-4 flex justify-center">
+          <Button type="button" variant="outline" onClick={openFileDialog}>
+            Change File
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
 
-// Default export for backward compatibility
 export default FileUpload
