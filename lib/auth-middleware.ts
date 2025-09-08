@@ -15,7 +15,13 @@ export interface AuthenticatedUser {
 
 export async function checkPermissions(request: NextRequest, requiredPermissions: string[] = []) {
   try {
-    const token = request.cookies.get("admin-token")?.value
+    // Get token from Authorization header or cookies
+    const authHeader = request.headers.get("authorization")
+    let token = authHeader?.replace("Bearer ", "")
+
+    if (!token) {
+      token = request.cookies.get("admin-token")?.value
+    }
 
     if (!token) {
       return NextResponse.json({ message: "Authentication required" }, { status: 401 })
@@ -37,8 +43,10 @@ export async function checkPermissions(request: NextRequest, requiredPermissions
 
     // Check permissions
     if (requiredPermissions.length > 0) {
-      const userPermissions = user.permissions || []
-      const hasPermission = requiredPermissions.some((permission) => userPermissions.includes(permission))
+      const userPermissions = user.permissions || ["all"]
+      const hasPermission =
+        userPermissions.includes("all") ||
+        requiredPermissions.some((permission) => userPermissions.includes(permission))
 
       if (!hasPermission) {
         return NextResponse.json({ message: "Insufficient permissions" }, { status: 403 })
@@ -97,7 +105,12 @@ export async function authenticateAdmin(request: NextRequest): Promise<Authentic
 
 export async function getAuthenticatedUser(request: NextRequest) {
   try {
-    const token = request.cookies.get("admin-token")?.value
+    const authHeader = request.headers.get("authorization")
+    let token = authHeader?.replace("Bearer ", "")
+
+    if (!token) {
+      token = request.cookies.get("admin-token")?.value
+    }
 
     if (!token) {
       return null

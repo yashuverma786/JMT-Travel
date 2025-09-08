@@ -1,16 +1,19 @@
 "use client"
 
 import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Textarea } from "@/components/ui/textarea"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Search, Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, MapPin, Star, TrendingUp, Loader2, RefreshCw } from "lucide-react"
+import { useAdmin } from "@/components/admin/admin-context"
 import Image from "next/image"
-import { FileUpload } from "@/components/ui/file-upload"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select" // Added Select
 
 interface Destination {
   _id: string
@@ -18,236 +21,273 @@ interface Destination {
   country: string
   description: string
   imageUrl: string
+  type: string
   popular: boolean
   trending: boolean
-  type?: "national" | "international" // Added type field
+  createdAt: string
+  updatedAt: string
 }
 
 export default function DestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>([])
-  const [searchTerm, setSearchTerm] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingDestination, setEditingDestination] = useState<Destination | null>(null)
+  const [formLoading, setFormLoading] = useState(false)
+  const { apiCall } = useAdmin()
+
   const [formData, setFormData] = useState({
     name: "",
     country: "",
     description: "",
     imageUrl: "",
+    type: "",
     popular: false,
     trending: false,
-    type: "" as "national" | "international" | "", // Initialize type
   })
-  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetchDestinations()
   }, [])
 
-  const fetchDestinations = async () => {
-    setLoading(true)
+  const fetchDestinations = async (showLoader = true) => {
     try {
-      const response = await fetch("/api/admin/destinations")
+      if (showLoader) setLoading(true)
+      else setRefreshing(true)
+
+      const response = await apiCall("/api/admin/destinations")
+
       if (response.ok) {
         const data = await response.json()
-        setDestinations(data.destinations)
+        if (data.success) {
+          setDestinations(data.destinations || [])
+        } else {
+          console.error("Failed to fetch destinations:", data.message)
+          setDestinations([])
+        }
+      } else {
+        console.error("Failed to fetch destinations:", response.status)
+        setDestinations([])
       }
     } catch (error) {
       console.error("Error fetching destinations:", error)
+      setDestinations([])
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  const filteredDestinations = destinations.filter(
-    (destination) =>
-      destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      destination.country.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setFormLoading(true)
+
+    try {
+      const url = editingDestination ? `/api/admin/destinations/${editingDestination._id}` : "/api/admin/destinations"
+
+      const method = editingDestination ? "PUT" : "POST"
+
+      const response = await apiCall(url, {
+        method,
+        body: JSON.stringify(formData),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          alert(editingDestination ? "Destination updated successfully!" : "Destination created successfully!")
+          setShowForm(false)
+          setEditingDestination(null)
+          resetForm()
+          fetchDestinations(false)
+        } else {
+          alert(`Error: ${data.message}`)
+        }
+      } else {
+        const error = await response.json()
+        alert(`Error: ${error.message}`)
+      }
+    } catch (error) {
+      console.error("Error saving destination:", error)
+      alert("Error saving destination")
+    } finally {
+      setFormLoading(false)
+    }
+  }
 
   const handleEdit = (destination: Destination) => {
     setEditingDestination(destination)
     setFormData({
       name: destination.name,
       country: destination.country,
-      description: destination.description,
-      imageUrl: destination.imageUrl,
-      popular: destination.popular,
-      trending: destination.trending,
-      type: destination.type || "", // Set type for editing
+      description: destination.description || "",
+      imageUrl: destination.imageUrl || "",
+      type: destination.type || "",
+      popular: destination.popular || false,
+      trending: destination.trending || false,
     })
     setShowForm(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (confirm("Are you sure you want to delete this destination?")) {
-      try {
-        const response = await fetch(`/api/admin/destinations/${id}`, {
-          method: "DELETE",
-        })
-        if (response.ok) {
-          setDestinations(destinations.filter((d) => d._id !== id))
-        } else {
-          const errorData = await response.json()
-          alert(errorData.message || "Failed to delete destination.")
-        }
-      } catch (error) {
-        console.error("Error deleting destination:", error)
-        alert("An error occurred while deleting the destination.")
-      }
-    }
-  }
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
+  const handleDelete = async (destinationId: string) => {
+    if (!confirm("Are you sure you want to delete this destination?")) return
 
     try {
-      const url = editingDestination ? `/api/admin/destinations/${editingDestination._id}` : "/api/admin/destinations"
-      const method = editingDestination ? "PUT" : "POST"
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
+      const response = await apiCall(`/api/admin/destinations/${destinationId}`, {
+        method: "DELETE",
       })
 
       if (response.ok) {
-        await fetchDestinations()
-        handleCancel()
+        setDestinations(destinations.filter((dest) => dest._id !== destinationId))
+        alert("Destination deleted successfully!")
       } else {
-        const errorData = await response.json()
-        alert(errorData.message || "Failed to save destination.")
+        const error = await response.json()
+        alert(`Error: ${error.message}`)
       }
     } catch (error) {
-      console.error("Error saving destination:", error)
-      alert("An error occurred while saving the destination.")
-    } finally {
-      setLoading(false)
+      console.error("Error deleting destination:", error)
+      alert("Error deleting destination")
     }
   }
 
-  const handleCancel = () => {
-    setShowForm(false)
-    setEditingDestination(null)
+  const resetForm = () => {
     setFormData({
       name: "",
       country: "",
       description: "",
       imageUrl: "",
+      type: "",
       popular: false,
       trending: false,
-      type: "" as "national" | "international" | "",
     })
+  }
+
+  const handleCancel = () => {
+    setShowForm(false)
+    setEditingDestination(null)
+    resetForm()
   }
 
   if (showForm) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" onClick={handleCancel}>
-            ← Back
-          </Button>
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              {editingDestination ? "Edit Destination" : "Add New Destination"}
-            </h1>
-            <p className="text-gray-600">Manage travel destinations</p>
+            <h1 className="text-3xl font-bold">{editingDestination ? "Edit Destination" : "Add New Destination"}</h1>
+            <p className="text-gray-600">
+              {editingDestination ? "Update destination information" : "Create a new travel destination"}
+            </p>
           </div>
+          <Button variant="outline" onClick={handleCancel}>
+            Cancel
+          </Button>
         </div>
 
-        <Card className="max-w-2xl">
+        <Card>
           <CardHeader>
             <CardTitle>Destination Details</CardTitle>
+            <CardDescription>Fill in the information for the destination</CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSave} className="space-y-6">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g., Paris"
-                  required
-                />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="name">Destination Name *</Label>
+                  <Input
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="e.g., Goa, Kerala, Rajasthan"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="country">Country *</Label>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    placeholder="e.g., India, Thailand, Nepal"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="type">Destination Type</Label>
+                  <Select value={formData.type} onValueChange={(value) => setFormData({ ...formData, type: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="beach">Beach</SelectItem>
+                      <SelectItem value="hill station">Hill Station</SelectItem>
+                      <SelectItem value="heritage">Heritage</SelectItem>
+                      <SelectItem value="nature">Nature</SelectItem>
+                      <SelectItem value="adventure">Adventure</SelectItem>
+                      <SelectItem value="spiritual">Spiritual</SelectItem>
+                      <SelectItem value="cultural">Cultural</SelectItem>
+                      <SelectItem value="national">National</SelectItem>
+                      <SelectItem value="international">International</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Input
+                    id="imageUrl"
+                    value={formData.imageUrl}
+                    onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input
-                  id="country"
-                  value={formData.country}
-                  onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                  placeholder="e.g., France"
-                  required
-                />
-              </div>
+
               <div>
                 <Label htmlFor="description">Description</Label>
-                <Input // Or Textarea
+                <Textarea
                   id="description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="A brief description of the destination"
+                  placeholder="Describe the destination, its attractions, and what makes it special..."
+                  rows={4}
                 />
               </div>
 
-              <div>
-                <Label htmlFor="destinationType">Destination Type</Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value: "national" | "international") => setFormData({ ...formData, type: value })}
-                  required
-                >
-                  <SelectTrigger id="destinationType">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="national">National</SelectItem>
-                    <SelectItem value="international">International</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <FileUpload
-                label="Destination Image"
-                value={formData.imageUrl}
-                onChange={(url) => setFormData({ ...formData, imageUrl: url as string })}
-                multiple={false}
-              />
-              {formData.imageUrl && (
-                <div className="mt-2">
-                  <Image
-                    src={formData.imageUrl || "/placeholder.svg"}
-                    alt="Destination preview"
-                    width={100}
-                    height={100}
-                    className="rounded object-cover"
+              <div className="flex gap-6">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="popular"
+                    checked={formData.popular}
+                    onCheckedChange={(checked) => setFormData({ ...formData, popular: checked as boolean })}
                   />
+                  <Label htmlFor="popular">Mark as Popular</Label>
                 </div>
-              )}
 
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="popular"
-                  checked={formData.popular}
-                  onCheckedChange={(checked) => setFormData({ ...formData, popular: Boolean(checked) })}
-                />
-                <Label htmlFor="popular">Mark as Popular</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="trending"
-                  checked={formData.trending}
-                  onCheckedChange={(checked) => setFormData({ ...formData, trending: Boolean(checked) })}
-                />
-                <Label htmlFor="trending">Mark as Trending</Label>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="trending"
+                    checked={formData.trending}
+                    onCheckedChange={(checked) => setFormData({ ...formData, trending: checked as boolean })}
+                  />
+                  <Label htmlFor="trending">Mark as Trending</Label>
+                </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
-                <Button type="submit" disabled={loading}>
-                  {loading ? "Saving..." : editingDestination ? "Update Destination" : "Create Destination"}
+              <div className="flex gap-4">
+                <Button type="submit" disabled={formLoading}>
+                  {formLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingDestination ? "Updating..." : "Creating..."}
+                    </>
+                  ) : editingDestination ? (
+                    "Update Destination"
+                  ) : (
+                    "Create Destination"
+                  )}
                 </Button>
                 <Button type="button" variant="outline" onClick={handleCancel}>
                   Cancel
@@ -264,112 +304,128 @@ export default function DestinationsPage() {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Destinations</h1>
-          <p className="text-gray-600">Manage travel destinations for your website</p>
+          <h1 className="text-3xl font-bold">Destinations Management</h1>
+          <p className="text-gray-600">Manage travel destinations and locations</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Destination
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => fetchDestinations(false)} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Destination
+          </Button>
+        </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-              <Input
-                placeholder="Search destinations..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4">Image</th>
-                  <th className="text-left p-4">Name</th>
-                  <th className="text-left p-4">Country</th>
-                  <th className="text-left p-4">Type</th> {/* Added Type column */}
-                  <th className="text-left p-4">Popular</th>
-                  <th className="text-left p-4">Trending</th>
-                  <th className="text-left p-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
-                      {" "}
-                      {/* Updated colSpan */}
-                      Loading destinations...
-                    </td>
-                  </tr>
-                ) : filteredDestinations.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="p-4 text-center text-gray-500">
-                      {" "}
-                      {/* Updated colSpan */}
-                      No destinations found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredDestinations.map((destination) => (
-                    <tr key={destination._id} className="border-b hover:bg-gray-50">
-                      <td className="p-4">
-                        <Image
-                          src={destination.imageUrl || "/placeholder.svg"}
-                          alt={destination.name}
-                          width={64}
-                          height={64}
-                          className="rounded-md object-cover"
-                        />
-                      </td>
-                      <td className="p-4 font-medium">{destination.name}</td>
-                      <td className="p-4 text-gray-600">{destination.country}</td>
-                      <td className="p-4 text-gray-600 capitalize">{destination.type || "N/A"}</td> {/* Display Type */}
-                      <td className="p-4">
-                        {destination.popular ? (
-                          <span className="text-green-500">Yes</span>
-                        ) : (
-                          <span className="text-red-500">No</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        {destination.trending ? (
-                          <span className="text-green-500">Yes</span>
-                        ) : (
-                          <span className="text-red-500">No</span>
-                        )}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEdit(destination)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDelete(destination._id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span className="text-lg">Loading destinations...</span>
+        </div>
+      ) : destinations.length === 0 ? (
+        <Card>
+          <CardContent className="text-center py-12">
+            <MapPin className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No destinations found</h3>
+            <p className="text-gray-600 mb-4">Get started by creating your first destination</p>
+            <Button onClick={() => setShowForm(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create First Destination
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {destinations.map((destination) => (
+            <Card key={destination._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="relative">
+                <Image
+                  src={destination.imageUrl || "/placeholder.svg?height=200&width=400"}
+                  alt={destination.name}
+                  width={400}
+                  height={200}
+                  className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    target.src = "/placeholder.svg?height=200&width=400"
+                  }}
+                />
+                <div className="absolute top-2 left-2 flex gap-2">
+                  {destination.trending && (
+                    <Badge className="bg-green-500 text-white">
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                      Trending
+                    </Badge>
+                  )}
+                  {destination.popular && (
+                    <Badge className="bg-red-500 text-white">
+                      <Star className="h-3 w-3 mr-1" />
+                      Popular
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg line-clamp-1">{destination.name}</CardTitle>
+                    <CardDescription className="flex items-center gap-1 mt-1">
+                      <MapPin className="h-3 w-3" />
+                      {destination.country}
+                    </CardDescription>
+                  </div>
+                  {destination.type && (
+                    <Badge variant="outline" className="text-xs">
+                      {destination.type}
+                    </Badge>
+                  )}
+                </div>
+              </CardHeader>
+
+              <CardContent>
+                <div className="space-y-3">
+                  {destination.description && (
+                    <p className="text-sm text-gray-600 line-clamp-2">{destination.description}</p>
+                  )}
+
+                  <div className="text-xs text-gray-500">
+                    Created: {new Date(destination.createdAt).toLocaleDateString()}
+                  </div>
+
+                  <div className="flex justify-between pt-3 border-t">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        window.open(`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`, "_blank")
+                      }
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      View
+                    </Button>
+                    <div className="space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => handleEdit(destination)}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(destination._id)}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

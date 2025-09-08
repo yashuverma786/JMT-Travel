@@ -1,11 +1,11 @@
 "use client"
 
 import type React from "react"
-import { createContext, useContext, useEffect, useState } from "react"
+import { createContext, useContext, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 
 interface User {
-  id: string
+  _id: string
   email: string
   username: string
   role: string
@@ -14,88 +14,160 @@ interface User {
 
 interface AdminContextType {
   user: User | null
-  loading: boolean
-  login: (email: string, password: string) => Promise<boolean>
-  logout: () => Promise<void>
-  checkAuth: () => Promise<void>
+  token: string | null
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>
+  logout: () => void
+  isLoading: boolean
+  isAuthenticated: boolean
+  apiCall: (url: string, options?: RequestInit) => Promise<Response>
 }
 
 const AdminContext = createContext<AdminContextType | undefined>(undefined)
 
 export function AdminProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [token, setToken] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
   const router = useRouter()
 
-  const checkAuth = async () => {
+  useEffect(() => {
+    // Check for existing token on mount
+    const savedToken = localStorage.getItem("admin-token")
+    if (savedToken) {
+      setToken(savedToken)
+      verifyToken(savedToken)
+    } else {
+      setIsLoading(false)
+    }
+  }, [])
+
+  const verifyToken = async (tokenToVerify: string) => {
     try {
       const response = await fetch("/api/admin/auth/verify", {
         method: "GET",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${tokenToVerify}`,
+          "Content-Type": "application/json",
+        },
       })
 
       if (response.ok) {
         const data = await response.json()
-        setUser(data.user)
+        if (data.success && data.user) {
+          setUser(data.user)
+          setToken(tokenToVerify)
+          setIsAuthenticated(true)
+          localStorage.setItem("admin-token", tokenToVerify)
+        } else {
+          throw new Error("Invalid response")
+        }
       } else {
-        setUser(null)
+        throw new Error("Token verification failed")
       }
     } catch (error) {
-      console.error("Auth check failed:", error)
+      console.error("Token verification failed:", error)
+      // Clear invalid token
+      localStorage.removeItem("admin-token")
+      setToken(null)
       setUser(null)
+      setIsAuthenticated(false)
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
-      setLoading(true)
+      setIsLoading(true)
       const response = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
         body: JSON.stringify({ email, password }),
       })
 
-      if (response.ok) {
-        const data = await response.json()
+      const data = await response.json()
+
+      if (response.ok && data.success) {
         setUser(data.user)
+        setToken(data.token)
+        setIsAuthenticated(true)
+        localStorage.setItem("admin-token", data.token)
+
+        // Redirect to dashboard
         router.push("/admin/dashboard")
-        return true
+
+        return { success: true }
       } else {
-        const error = await response.json()
-        console.error("Login failed:", error.message)
-        return false
+        return { success: false, message: data.message || "Login failed" }
       }
     } catch (error) {
       console.error("Login error:", error)
-      return false
+      return { success: false, message: "Network error occurred" }
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
   const logout = async () => {
     try {
+      // Call logout API
       await fetch("/api/admin/auth/logout", {
         method: "POST",
-        credentials: "include",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       })
-      setUser(null)
-      router.push("/admin")
     } catch (error) {
-      console.error("Logout error:", error)
+      console.error("Logout API error:", error)
     }
+
+    // Clear local state
+    setUser(null)
+    setToken(null)
+    setIsAuthenticated(false)
+    localStorage.removeItem("admin-token")
+
+    // Redirect to login
+    router.push("/admin")
   }
 
-  useEffect(() => {
-    checkAuth()
-  }, [])
+  const apiCall = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const headers = {
+      "Content-Type": "application/json",
+      ...options.headers,
+    }
 
-  return <AdminContext.Provider value={{ user, loading, login, logout, checkAuth }}>{children}</AdminContext.Provider>
+    if (token) {
+      headers.Authorization = `Bearer ${token}`
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    })
+
+    // If unauthorized, logout
+    if (response.status === 401) {
+      logout()
+    }
+
+    return response
+  }
+
+  const value: AdminContextType = {
+    user,
+    token,
+    login,
+    logout,
+    isLoading,
+    isAuthenticated,
+    apiCall,
+  }
+
+  return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>
 }
 
 export function useAdmin() {

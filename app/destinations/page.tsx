@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import Image from "next/image"
 import Link from "next/link"
@@ -20,6 +22,7 @@ import {
   TreePine,
   Building,
   Loader2,
+  RefreshCw,
 } from "lucide-react"
 
 interface Destination {
@@ -44,52 +47,62 @@ const categories = [
   { value: "adventure", label: "Adventure", icon: <Mountain className="h-4 w-4" /> },
   { value: "spiritual", label: "Spiritual", icon: <Building className="h-4 w-4" /> },
   { value: "cultural", label: "Cultural", icon: <Building className="h-4 w-4" /> },
-  { value: "national", label: "National", icon: <MapPin className="h-4 w-4" /> },
-  { value: "international", label: "International", icon: <Plane className="h-4 w-4" /> },
 ]
 
 export default function DestinationsPage() {
   const [destinations, setDestinations] = useState<Destination[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [sortBy, setSortBy] = useState("popularity")
   const [filterCategory, setFilterCategory] = useState("all")
   const [showTrendingOnly, setShowTrendingOnly] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
 
-  useEffect(() => {
-    fetchDestinations()
-  }, [])
-
-  const fetchDestinations = async () => {
+  const fetchDestinations = async (showLoader = true) => {
     try {
-      setLoading(true)
-      const response = await fetch("/api/destinations")
+      if (showLoader) setLoading(true)
+      else setRefreshing(true)
+
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: "20",
+      })
+
+      if (filterCategory !== "all") params.append("type", filterCategory)
+      if (searchTerm) params.append("search", searchTerm)
+
+      const response = await fetch(`/api/destinations?${params}`)
+
       if (response.ok) {
         const data = await response.json()
-        setDestinations(data.destinations || [])
+        if (data.success) {
+          setDestinations(data.destinations || [])
+          setTotalPages(data.pagination?.pages || 1)
+        } else {
+          console.error("API returned error:", data.error)
+          setDestinations([])
+        }
       } else {
-        console.error("Failed to fetch destinations")
+        console.error("Failed to fetch destinations:", response.status)
+        setDestinations([])
       }
     } catch (error) {
       console.error("Error fetching destinations:", error)
+      setDestinations([])
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
-  // Filter destinations
-  let filteredDestinations = destinations.filter(
-    (destination) =>
-      destination.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      destination.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      destination.country.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  useEffect(() => {
+    fetchDestinations()
+  }, [currentPage, filterCategory, searchTerm])
 
-  if (filterCategory !== "all") {
-    filteredDestinations = filteredDestinations.filter(
-      (destination) => destination.type?.toLowerCase() === filterCategory.toLowerCase(),
-    )
-  }
+  // Filter and sort destinations locally
+  let filteredDestinations = [...destinations]
 
   if (showTrendingOnly) {
     filteredDestinations = filteredDestinations.filter((destination) => destination.trending)
@@ -116,12 +129,22 @@ export default function DestinationsPage() {
     }
   })
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    setCurrentPage(1)
+    fetchDestinations()
+  }
+
+  const handleRefresh = () => {
+    fetchDestinations(false)
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         {/* Hero Section */}
         <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white py-16">
-          <div className="container text-center">
+          <div className="container px-6 text-center">
             <div className="flex justify-center mb-4">
               <div className="p-4 bg-white/20 rounded-full">
                 <MapPin className="h-12 w-12" />
@@ -134,7 +157,7 @@ export default function DestinationsPage() {
           </div>
         </section>
 
-        <div className="container py-8">
+        <div className="container px-6 py-8">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin mr-2" />
             <span className="text-lg">Loading destinations...</span>
@@ -148,7 +171,7 @@ export default function DestinationsPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-800 text-white py-16">
-        <div className="container text-center">
+        <div className="container px-6 text-center">
           <div className="flex justify-center mb-4">
             <div className="p-4 bg-white/20 rounded-full">
               <MapPin className="h-12 w-12" />
@@ -165,10 +188,10 @@ export default function DestinationsPage() {
         </div>
       </section>
 
-      <div className="container py-8">
+      <div className="container px-6 py-8">
         {/* Search and Filters */}
         <div className="mb-8 space-y-4">
-          <div className="flex flex-col md:flex-row gap-4">
+          <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
@@ -191,8 +214,12 @@ export default function DestinationsPage() {
                   <SelectItem value="oldest">Oldest First</SelectItem>
                 </SelectContent>
               </Select>
+              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Search className="h-4 w-4 mr-2" />
+                Search
+              </Button>
             </div>
-          </div>
+          </form>
 
           <div className="flex flex-wrap gap-4">
             <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -220,8 +247,13 @@ export default function DestinationsPage() {
               Trending Only
             </Button>
 
-            <Button variant="outline" onClick={fetchDestinations} className="flex items-center gap-2 bg-transparent">
-              <Search className="h-4 w-4" />
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <RefreshCw className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`} />
               Refresh
             </Button>
           </div>
@@ -236,82 +268,107 @@ export default function DestinationsPage() {
 
         {/* Destinations Grid */}
         {filteredDestinations.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredDestinations.map((destination) => (
-              <Card key={destination._id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                <div className="relative">
-                  <Image
-                    src={destination.imageUrl || "/placeholder.svg?height=300&width=400"}
-                    alt={destination.name}
-                    width={400}
-                    height={300}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement
-                      target.src = "/placeholder.svg?height=300&width=400"
-                    }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredDestinations.map((destination) => (
+                <Card key={destination._id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+                  <div className="relative">
+                    <Image
+                      src={destination.imageUrl || "/placeholder.svg?height=300&width=400"}
+                      alt={destination.name}
+                      width={400}
+                      height={300}
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = "/placeholder.svg?height=300&width=400"
+                      }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
 
-                  {/* Trending Badge */}
-                  {destination.trending && (
-                    <Badge className="absolute top-2 left-2 bg-green-500 text-white">
-                      <TrendingUp className="h-3 w-3 mr-1" />
-                      Trending
-                    </Badge>
-                  )}
-
-                  {/* Popular Badge */}
-                  {destination.popular && (
-                    <Badge className="absolute top-2 right-2 bg-red-500 text-white">
-                      <Star className="h-3 w-3 mr-1" />
-                      Popular
-                    </Badge>
-                  )}
-
-                  {/* Destination Info Overlay */}
-                  <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                    <h3 className="text-xl font-bold mb-1">{destination.name}</h3>
-                    <div className="flex items-center gap-1 text-sm mb-2">
-                      <MapPin className="h-3 w-3" />
-                      <span>{destination.country}</span>
-                    </div>
-                    {destination.description && (
-                      <p className="text-sm opacity-90 line-clamp-2">{destination.description}</p>
-                    )}
-                  </div>
-                </div>
-
-                <CardContent className="p-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <Badge variant="outline" className="text-xs">
-                        {destination.type || "Destination"}
+                    {/* Trending Badge */}
+                    {destination.trending && (
+                      <Badge className="absolute top-2 left-2 bg-green-500 text-white">
+                        <TrendingUp className="h-3 w-3 mr-1" />
+                        Trending
                       </Badge>
-                      <div className="text-xs text-gray-500">
-                        Added {new Date(destination.createdAt).toLocaleDateString()}
+                    )}
+
+                    {/* Popular Badge */}
+                    {destination.popular && (
+                      <Badge className="absolute top-2 right-2 bg-red-500 text-white">
+                        <Star className="h-3 w-3 mr-1" />
+                        Popular
+                      </Badge>
+                    )}
+
+                    {/* Destination Info Overlay */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
+                      <h3 className="text-xl font-bold mb-1">{destination.name}</h3>
+                      <div className="flex items-center gap-1 text-sm mb-2">
+                        <MapPin className="h-3 w-3" />
+                        <span>{destination.country}</span>
+                      </div>
+                      {destination.description && (
+                        <p className="text-sm opacity-90 line-clamp-2">{destination.description}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <CardContent className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline" className="text-xs">
+                          {destination.type || "Destination"}
+                        </Badge>
+                        <div className="text-xs text-gray-500">
+                          Added {new Date(destination.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2 pt-2">
+                        <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700" asChild>
+                          <Link href={`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`}>
+                            <Camera className="h-3 w-3 mr-1" />
+                            Explore
+                          </Link>
+                        </Button>
+                        <Button size="sm" variant="outline" className="flex-1 bg-transparent" asChild>
+                          <Link href={`/trips?destination=${destination.name}`}>
+                            <Plane className="h-3 w-3 mr-1" />
+                            Packages
+                          </Link>
+                        </Button>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
 
-                    <div className="flex gap-2 pt-2">
-                      <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700" asChild>
-                        <Link href={`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`}>
-                          <Camera className="h-3 w-3 mr-1" />
-                          Explore
-                        </Link>
-                      </Button>
-                      <Button size="sm" variant="outline" className="flex-1 bg-transparent" asChild>
-                        <Link href={`/destinations/${destination.name.toLowerCase().replace(/\s+/g, "-")}`}>
-                          <Plane className="h-3 w-3 mr-1" />
-                          Packages
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center gap-2 mt-12">
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-4">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="text-center py-12">
             <div className="text-gray-500 mb-4">
@@ -325,11 +382,12 @@ export default function DestinationsPage() {
                   setSearchTerm("")
                   setFilterCategory("all")
                   setShowTrendingOnly(false)
+                  setCurrentPage(1)
                 }}
               >
                 Clear Filters
               </Button>
-              <Button variant="outline" onClick={fetchDestinations}>
+              <Button variant="outline" onClick={handleRefresh}>
                 Refresh Data
               </Button>
             </div>

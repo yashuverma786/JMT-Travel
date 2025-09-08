@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, Loader2, RefreshCw } from "lucide-react"
 import TripForm from "@/components/admin/trip-form"
 import { useAdmin } from "@/components/admin/admin-context"
 
@@ -25,6 +25,7 @@ interface Trip {
 export default function TripsPage() {
   const [trips, setTrips] = useState<Trip[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null)
   const [formLoading, setFormLoading] = useState(false)
@@ -34,21 +35,26 @@ export default function TripsPage() {
     fetchTrips()
   }, [])
 
-  const fetchTrips = async () => {
+  const fetchTrips = async (showLoader = true) => {
     try {
-      setLoading(true)
+      if (showLoader) setLoading(true)
+      else setRefreshing(true)
+
       const response = await apiCall("/api/admin/trips")
 
       if (response.ok) {
         const data = await response.json()
-        setTrips(data)
+        setTrips(Array.isArray(data) ? data : [])
       } else {
         console.error("Failed to fetch trips")
+        setTrips([])
       }
     } catch (error) {
       console.error("Error fetching trips:", error)
+      setTrips([])
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -65,6 +71,7 @@ export default function TripsPage() {
         setTrips([newTrip, ...trips])
         setShowForm(false)
         alert("Trip created successfully!")
+        fetchTrips(false)
       } else {
         const error = await response.json()
         alert(`Error: ${error.message}`)
@@ -93,6 +100,7 @@ export default function TripsPage() {
         setEditingTrip(null)
         setShowForm(false)
         alert("Trip updated successfully!")
+        fetchTrips(false)
       } else {
         const error = await response.json()
         alert(`Error: ${error.message}`)
@@ -158,28 +166,22 @@ export default function TripsPage() {
           <h1 className="text-3xl font-bold">Trips Management</h1>
           <p className="text-gray-600">Manage your travel packages and itineraries</p>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Trip
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => fetchTrips(false)} disabled={refreshing}>
+            <RefreshCw className={`h-4 w-4 mr-2 ${refreshing ? "animate-spin" : ""}`} />
+            Refresh
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add New Trip
+          </Button>
+        </div>
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="h-3 bg-gray-200 rounded"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin mr-2" />
+          <span className="text-lg">Loading trips...</span>
         </div>
       ) : trips.length === 0 ? (
         <Card>

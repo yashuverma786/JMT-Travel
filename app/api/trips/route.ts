@@ -9,32 +9,56 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get("category")
     const destination = searchParams.get("destination")
     const tripType = searchParams.get("tripType")
+    const minPrice = searchParams.get("minPrice")
+    const maxPrice = searchParams.get("maxPrice")
+    const duration = searchParams.get("duration")
 
     const { db } = await connectToDatabase()
 
     // Build query
-    const query: any = {}
+    const query: any = { status: { $ne: "inactive" } }
+
     if (category && category !== "all") {
       query.tripType = { $regex: category, $options: "i" }
     }
     if (destination) {
-      query.destinationName = { $regex: destination, $options: "i" }
+      query.$or = [
+        { destinationName: { $regex: destination, $options: "i" } },
+        { title: { $regex: destination, $options: "i" } },
+      ]
     }
     if (tripType && tripType !== "all") {
       query.tripType = { $regex: tripType, $options: "i" }
+    }
+    if (minPrice) {
+      query.salePrice = { $gte: Number(minPrice) }
+    }
+    if (maxPrice) {
+      if (query.salePrice) {
+        query.salePrice.$lte = Number(maxPrice)
+      } else {
+        query.salePrice = { $lte: Number(maxPrice) }
+      }
+    }
+    if (duration) {
+      query.durationDays = Number(duration)
     }
 
     const skip = (page - 1) * limit
 
     const [trips, totalCount] = await Promise.all([
-      db.collection("trips").find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).toArray(),
+      db.collection("trips").find(query).sort({ isTrending: -1, createdAt: -1 }).skip(skip).limit(limit).toArray(),
       db.collection("trips").countDocuments(query),
     ])
 
     const totalPages = Math.ceil(totalCount / limit)
 
     return NextResponse.json({
-      trips,
+      success: true,
+      trips: trips.map((trip) => ({
+        ...trip,
+        _id: trip._id.toString(),
+      })),
       pagination: {
         page,
         limit,
@@ -48,6 +72,7 @@ export async function GET(request: NextRequest) {
     console.error("Error fetching trips:", error)
     return NextResponse.json(
       {
+        success: false,
         trips: [],
         pagination: { page: 1, limit: 12, total: 0, pages: 0, hasNext: false, hasPrev: false },
         error: "Failed to fetch trips",
