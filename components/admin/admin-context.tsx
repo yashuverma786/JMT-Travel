@@ -32,63 +32,99 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter()
 
   useEffect(() => {
-    // Check for existing token on mount
-    const savedToken = localStorage.getItem("admin-token")
-    if (savedToken) {
-      setToken(savedToken)
-      verifyToken(savedToken)
-    } else {
-      setIsLoading(false)
-    }
+    console.log("AdminProvider mounted, checking for existing token...")
+    checkExistingAuth()
   }, [])
 
-  const verifyToken = async (tokenToVerify: string) => {
+  const checkExistingAuth = async () => {
     try {
-      const response = await fetch("/api/admin/auth/verify", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${tokenToVerify}`,
-          "Content-Type": "application/json",
-        },
-      })
+      // Check localStorage first
+      const savedToken = localStorage.getItem("admin-token")
+      console.log("Saved token found:", savedToken ? "Yes" : "No")
 
-      if (response.ok) {
-        const data = await response.json()
-        if (data.success && data.user) {
-          setUser(data.user)
-          setToken(tokenToVerify)
-          setIsAuthenticated(true)
-          localStorage.setItem("admin-token", tokenToVerify)
-        } else {
-          throw new Error("Invalid response")
-        }
+      if (savedToken) {
+        await verifyToken(savedToken)
       } else {
-        throw new Error("Token verification failed")
+        // Check cookies as fallback
+        await verifyToken()
       }
     } catch (error) {
-      console.error("Token verification failed:", error)
-      // Clear invalid token
-      localStorage.removeItem("admin-token")
-      setToken(null)
-      setUser(null)
-      setIsAuthenticated(false)
+      console.error("Auth check error:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
+  const verifyToken = async (tokenToVerify?: string) => {
+    try {
+      console.log("Verifying token...")
+
+      const headers: HeadersInit = {
+        "Content-Type": "application/json",
+      }
+
+      if (tokenToVerify) {
+        headers.Authorization = `Bearer ${tokenToVerify}`
+      }
+
+      const response = await fetch("/api/admin/auth/verify", {
+        method: "GET",
+        headers,
+        credentials: "include",
+      })
+
+      console.log("Verify response status:", response.status)
+
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Verify response data:", data)
+
+        if (data.success && data.user) {
+          setUser(data.user)
+          setIsAuthenticated(true)
+          if (tokenToVerify) {
+            setToken(tokenToVerify)
+            localStorage.setItem("admin-token", tokenToVerify)
+          }
+          console.log("User authenticated successfully")
+        } else {
+          throw new Error("Invalid response format")
+        }
+      } else {
+        throw new Error(`Verification failed: ${response.status}`)
+      }
+    } catch (error) {
+      console.error("Token verification failed:", error)
+      // Clear invalid auth state
+      clearAuthState()
+    }
+  }
+
+  const clearAuthState = () => {
+    setUser(null)
+    setToken(null)
+    setIsAuthenticated(false)
+    localStorage.removeItem("admin-token")
+  }
+
   const login = async (email: string, password: string): Promise<{ success: boolean; message?: string }> => {
     try {
       setIsLoading(true)
+      console.log("Attempting login for:", email)
+
       const response = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
+        credentials: "include",
         body: JSON.stringify({ email, password }),
       })
 
+      console.log("Login response status:", response.status)
+
       const data = await response.json()
+      console.log("Login response data:", data)
 
       if (response.ok && data.success) {
         setUser(data.user)
@@ -96,11 +132,16 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
         setIsAuthenticated(true)
         localStorage.setItem("admin-token", data.token)
 
-        // Redirect to dashboard
-        router.push("/admin/dashboard")
+        console.log("Login successful, user set:", data.user)
+
+        // Small delay to ensure state is updated
+        setTimeout(() => {
+          router.push("/admin/dashboard")
+        }, 100)
 
         return { success: true }
       } else {
+        console.log("Login failed:", data.message)
         return { success: false, message: data.message || "Login failed" }
       }
     } catch (error) {
@@ -113,29 +154,29 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Call logout API
-      await fetch("/api/admin/auth/logout", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
+      console.log("Logging out...")
+
+      if (token) {
+        await fetch("/api/admin/auth/logout", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: "include",
+        })
+      }
     } catch (error) {
       console.error("Logout API error:", error)
     }
 
     // Clear local state
-    setUser(null)
-    setToken(null)
-    setIsAuthenticated(false)
-    localStorage.removeItem("admin-token")
-
-    // Redirect to login
+    clearAuthState()
+    console.log("Logout complete, redirecting...")
     router.push("/admin")
   }
 
   const apiCall = async (url: string, options: RequestInit = {}): Promise<Response> => {
-    const headers = {
+    const headers: HeadersInit = {
       "Content-Type": "application/json",
       ...options.headers,
     }
@@ -147,10 +188,12 @@ export function AdminProvider({ children }: { children: React.ReactNode }) {
     const response = await fetch(url, {
       ...options,
       headers,
+      credentials: "include",
     })
 
     // If unauthorized, logout
     if (response.status === 401) {
+      console.log("API call returned 401, logging out...")
       logout()
     }
 
