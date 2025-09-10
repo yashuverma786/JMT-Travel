@@ -34,6 +34,7 @@
     "@types/jsonwebtoken": "^9.0.3",
     "bcryptjs": "latest",
     "class-variance-authority": "^0.7.1",
+    "cloudinary": "latest",
     "clsx": "^2.1.1",
     "date-fns": "latest",
     "framer-motion": "latest",

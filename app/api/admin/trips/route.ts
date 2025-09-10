@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     const tripData = await request.json()
     const { db } = await connectToDatabase()
 
-    // Validate required fields
     if (!tripData.title || !tripData.destinationId || !tripData.adultPrice) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
     }
@@ -44,14 +43,24 @@ export async function POST(request: NextRequest) {
     }
 
     const newTrip = {
-      ...tripData,
+      title: tripData.title,
+      description: tripData.description || "",
+      destinationId: tripData.destinationId,
       destinationName,
+      tripType: tripData.tripType || "leisure",
+      durationDays: Number(tripData.durationDays) || 1,
+      durationNights: Number(tripData.durationNights) || 0,
       adultPrice: Number(tripData.adultPrice),
       salePrice: Number(tripData.salePrice || tripData.adultPrice),
-      durationDays: Number(tripData.durationDays),
-      durationNights: Number(tripData.durationNights),
+      childPrice: Number(tripData.childPrice || 0),
+      infantPrice: Number(tripData.infantPrice || 0),
+      images: tripData.images || [],
+      inclusions: tripData.inclusions || [],
+      exclusions: tripData.exclusions || [],
+      itinerary: tripData.itinerary || [],
       status: tripData.status || "active",
-      isTrending: tripData.isTrending || false,
+      isTrending: Boolean(tripData.isTrending),
+      isPopular: Boolean(tripData.isPopular),
       createdAt: new Date(),
       updatedAt: new Date(),
     }

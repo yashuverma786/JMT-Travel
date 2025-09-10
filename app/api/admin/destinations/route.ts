@@ -35,7 +35,6 @@ export async function POST(request: NextRequest) {
     const destinationData = await request.json()
     const { db } = await connectToDatabase()
 
-    // Validate required fields
     if (!destinationData.name || !destinationData.country) {
       return NextResponse.json(
         {
@@ -47,9 +46,13 @@ export async function POST(request: NextRequest) {
     }
 
     const newDestination = {
-      ...destinationData,
-      popular: destinationData.popular || false,
-      trending: destinationData.trending || false,
+      name: destinationData.name,
+      country: destinationData.country,
+      description: destinationData.description || "",
+      imageUrl: destinationData.imageUrl || "/placeholder.svg",
+      type: destinationData.type || "",
+      popular: Boolean(destinationData.popular),
+      trending: Boolean(destinationData.trending),
       createdAt: new Date(),
       updatedAt: new Date(),
     }

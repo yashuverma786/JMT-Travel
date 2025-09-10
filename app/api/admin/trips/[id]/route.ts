@@ -15,7 +15,10 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ message: "Trip not found" }, { status: 404 })
     }
 
-    return NextResponse.json(trip)
+    return NextResponse.json({
+      ...trip,
+      _id: trip._id.toString(),
+    })
   } catch (error) {
     console.error("Error fetching trip:", error)
     return NextResponse.json({ message: "Error fetching trip" }, { status: 500 })
@@ -32,18 +35,30 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     // Get destination name if destinationId is provided
     let destinationName = tripData.destinationName
-    if (tripData.destinationId) {
+    if (tripData.destinationId && ObjectId.isValid(tripData.destinationId)) {
       const destination = await db.collection("destinations").findOne({ _id: new ObjectId(tripData.destinationId) })
       destinationName = destination?.name || "Unknown"
     }
 
     const updateData = {
-      ...tripData,
+      title: tripData.title,
+      description: tripData.description || "",
+      destinationId: tripData.destinationId,
       destinationName,
+      tripType: tripData.tripType || "leisure",
+      durationDays: Number(tripData.durationDays) || 1,
+      durationNights: Number(tripData.durationNights) || 0,
       adultPrice: Number(tripData.adultPrice),
       salePrice: Number(tripData.salePrice || tripData.adultPrice),
-      durationDays: Number(tripData.durationDays),
-      durationNights: Number(tripData.durationNights),
+      childPrice: Number(tripData.childPrice || 0),
+      infantPrice: Number(tripData.infantPrice || 0),
+      images: tripData.images || [],
+      inclusions: tripData.inclusions || [],
+      exclusions: tripData.exclusions || [],
+      itinerary: tripData.itinerary || [],
+      status: tripData.status || "active",
+      isTrending: Boolean(tripData.isTrending),
+      isPopular: Boolean(tripData.isPopular),
       updatedAt: new Date(),
     }
 
@@ -54,7 +69,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     }
 
     const updatedTrip = await db.collection("trips").findOne({ _id: new ObjectId(params.id) })
-    return NextResponse.json({ message: "Trip updated successfully", trip: updatedTrip })
+    return NextResponse.json({
+      message: "Trip updated successfully",
+      trip: {
+        ...updatedTrip,
+        _id: updatedTrip._id.toString(),
+      },
+    })
   } catch (error) {
     console.error("Error updating trip:", error)
     return NextResponse.json({ message: "Error updating trip" }, { status: 500 })

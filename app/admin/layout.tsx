@@ -9,9 +9,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <AdminProvider>
-      <div className="min-h-screen bg-gray-50">{children}</div>
-    </AdminProvider>
-  )
+  return <AdminProvider>{children}</AdminProvider>
 }

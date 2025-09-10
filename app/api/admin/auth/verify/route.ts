@@ -3,58 +3,37 @@ import jwt from "jsonwebtoken"
 import { connectToDatabase } from "@/lib/mongodb"
 import { ObjectId } from "mongodb"
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-key-jmt-travel-2024"
-
 export async function GET(request: NextRequest) {
   try {
-    console.log("Verify API called")
-
-    // Get token from Authorization header or cookies
-    const authHeader = request.headers.get("authorization")
-    let token = authHeader?.replace("Bearer ", "")
-
-    if (!token) {
-      token = request.cookies.get("admin-token")?.value
-    }
-
-    console.log("Token found:", token ? "Yes" : "No")
+    const token = request.cookies.get("admin_token")?.value
 
     if (!token) {
       return NextResponse.json({ success: false, message: "No token provided" }, { status: 401 })
     }
 
-    // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any
-    console.log("Token decoded:", decoded.userId)
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
 
     const { db } = await connectToDatabase()
+    const user = await db
+      .collection("admin_users")
+      .findOne({ _id: new ObjectId(decoded.userId) }, { projection: { password: 0 } })
 
-    // Find admin user
-    const admin = await db.collection("admin_users").findOne({
-      _id: new ObjectId(decoded.userId),
-    })
-
-    console.log("Admin found in verify:", admin ? "Yes" : "No")
-
-    if (!admin) {
+    if (!user) {
       return NextResponse.json({ success: false, message: "User not found" }, { status: 401 })
     }
 
-    const userData = {
-      _id: admin._id.toString(),
-      email: admin.email,
-      username: admin.username || admin.email,
-      role: admin.role || "admin",
-      permissions: admin.permissions || ["all"],
-    }
-
-    console.log("Verify successful")
     return NextResponse.json({
       success: true,
-      user: userData,
+      user: {
+        id: user._id.toString(),
+        email: user.email,
+        username: user.username,
+        role: user.role,
+        permissions: user.permissions,
+      },
     })
   } catch (error) {
-    console.error("Verify error:", error)
+    console.error("Token verification error:", error)
     return NextResponse.json({ success: false, message: "Invalid token" }, { status: 401 })
   }
 }
