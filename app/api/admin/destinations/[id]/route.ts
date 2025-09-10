@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       country: updateData.country,
       description: updateData.description || "",
       imageUrl: updateData.imageUrl || "/placeholder.svg",
-      type: updateData.type || "",
+      type: updateData.type || "city",
       popular: Boolean(updateData.popular),
       trending: Boolean(updateData.trending),
       updatedAt: new Date(),

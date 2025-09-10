@@ -12,16 +12,19 @@ export async function GET(request: NextRequest, { params }: { params: { id: stri
     const trip = await db.collection("trips").findOne({ _id: new ObjectId(params.id) })
 
     if (!trip) {
-      return NextResponse.json({ message: "Trip not found" }, { status: 404 })
+      return NextResponse.json({ success: false, message: "Trip not found" }, { status: 404 })
     }
 
     return NextResponse.json({
-      ...trip,
-      _id: trip._id.toString(),
+      success: true,
+      trip: {
+        ...trip,
+        _id: trip._id.toString(),
+      },
     })
   } catch (error) {
     console.error("Error fetching trip:", error)
-    return NextResponse.json({ message: "Error fetching trip" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Error fetching trip" }, { status: 500 })
   }
 }
 
@@ -65,11 +68,12 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const result = await db.collection("trips").updateOne({ _id: new ObjectId(params.id) }, { $set: updateData })
 
     if (result.matchedCount === 0) {
-      return NextResponse.json({ message: "Trip not found" }, { status: 404 })
+      return NextResponse.json({ success: false, message: "Trip not found" }, { status: 404 })
     }
 
     const updatedTrip = await db.collection("trips").findOne({ _id: new ObjectId(params.id) })
     return NextResponse.json({
+      success: true,
       message: "Trip updated successfully",
       trip: {
         ...updatedTrip,
@@ -78,7 +82,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     })
   } catch (error) {
     console.error("Error updating trip:", error)
-    return NextResponse.json({ message: "Error updating trip" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Error updating trip" }, { status: 500 })
   }
 }
 
@@ -92,12 +96,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     const result = await db.collection("trips").deleteOne({ _id: new ObjectId(params.id) })
 
     if (result.deletedCount === 0) {
-      return NextResponse.json({ message: "Trip not found" }, { status: 404 })
+      return NextResponse.json({ success: false, message: "Trip not found" }, { status: 404 })
     }
 
-    return NextResponse.json({ message: "Trip deleted successfully" })
+    return NextResponse.json({
+      success: true,
+      message: "Trip deleted successfully",
+    })
   } catch (error) {
     console.error("Error deleting trip:", error)
-    return NextResponse.json({ message: "Error deleting trip" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Error deleting trip" }, { status: 500 })
   }
 }

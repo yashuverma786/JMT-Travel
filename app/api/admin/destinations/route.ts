@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
       country: destinationData.country,
       description: destinationData.description || "",
       imageUrl: destinationData.imageUrl || "/placeholder.svg",
-      type: destinationData.type || "",
+      type: destinationData.type || "city",
       popular: Boolean(destinationData.popular),
       trending: Boolean(destinationData.trending),
       createdAt: new Date(),

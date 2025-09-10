@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
           {
             resource_type: "auto",
             folder: "jmt-travel",
+            transformation: [{ width: 1200, height: 800, crop: "limit" }, { quality: "auto" }, { format: "webp" }],
           },
           (error, result) => {
             if (error) reject(error)
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       url: (result as any).secure_url,
+      public_id: (result as any).public_id,
     })
   } catch (error) {
     console.error("Upload error:", error)

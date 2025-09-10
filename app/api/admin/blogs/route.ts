@@ -1,30 +1,42 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
+import { checkPermissions } from "@/lib/auth-middleware"
 
-// GET all blogs
 export async function GET(request: NextRequest) {
+  const authCheck = await checkPermissions(request, ["manage_blogs"])
+  if (authCheck) return authCheck
+
   try {
     const { db } = await connectToDatabase()
-    const blogs = await db.collection("blogs").find({}).toArray()
-    return NextResponse.json({ blogs })
+    const blogs = await db.collection("blogs").find({}).sort({ createdAt: -1 }).toArray()
+
+    return NextResponse.json({
+      success: true,
+      blogs: blogs.map((blog) => ({
+        ...blog,
+        _id: blog._id.toString(),
+      })),
+    })
   } catch (error) {
     console.error("Error fetching blogs:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
 
-// POST a new blog
 export async function POST(request: NextRequest) {
+  const authCheck = await checkPermissions(request, ["manage_blogs"])
+  if (authCheck) return authCheck
+
   try {
     const blogData = await request.json()
     const { title, author, content, category, imageUrl, tags, status } = blogData
 
     if (!title || !author || !content) {
-      return NextResponse.json({ message: "Missing required blog fields" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Missing required blog fields" }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
-    const result = await db.collection("blogs").insertOne({
+    const newBlog = {
       title,
       author,
       content,
@@ -34,17 +46,24 @@ export async function POST(request: NextRequest) {
       status: status || "draft", // draft, published
       createdAt: new Date(),
       updatedAt: new Date(),
-    })
+    }
+
+    const result = await db.collection("blogs").insertOne(newBlog)
+    const createdBlog = await db.collection("blogs").findOne({ _id: result.insertedId })
 
     return NextResponse.json(
       {
+        success: true,
         message: "Blog created successfully",
-        blog: { _id: result.insertedId, ...blogData },
+        blog: {
+          ...createdBlog,
+          _id: createdBlog._id.toString(),
+        },
       },
       { status: 201 },
     )
   } catch (error) {
     console.error("Error creating blog:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }

@@ -1,9 +1,13 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { connectToDatabase } from "@/lib/mongodb"
+import { checkPermissions } from "@/lib/auth-middleware"
 import bcrypt from "bcryptjs"
-import { ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions" // Import this
+import { ROLES_PERMISSIONS, type PermissionValue } from "@/lib/permissions"
 
 export async function GET(request: NextRequest) {
+  const authCheck = await checkPermissions(request, ["manage_users"])
+  if (authCheck) return authCheck
+
   try {
     const { db } = await connectToDatabase()
 
@@ -15,28 +19,38 @@ export async function GET(request: NextRequest) {
           projection: { password: 0 }, // Exclude password from response
         },
       )
+      .sort({ createdAt: -1 })
       .toArray()
 
-    return NextResponse.json({ users })
+    return NextResponse.json({
+      success: true,
+      users: users.map((user) => ({
+        ...user,
+        _id: user._id.toString(),
+      })),
+    })
   } catch (error) {
     console.error("Error fetching users:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }
 
 export async function POST(request: NextRequest) {
+  const authCheck = await checkPermissions(request, ["manage_users"])
+  if (authCheck) return authCheck
+
   try {
     const userData = await request.json()
     const { username, email, password, role, status } = userData
 
     if (!username || !email || !password || !role) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
     // Validate role - only allow these specific roles
     const allowedRoles = ["super_admin", "admin", "hotel_manager", "transfer_manager", "trip_manager"]
     if (!allowedRoles.includes(role)) {
-      return NextResponse.json({ message: "Invalid role specified" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Invalid role specified" }, { status: 400 })
     }
 
     const { db } = await connectToDatabase()
@@ -47,7 +61,10 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUser) {
-      return NextResponse.json({ message: "User with this username or email already exists" }, { status: 409 })
+      return NextResponse.json(
+        { success: false, message: "User with this username or email already exists" },
+        { status: 409 },
+      )
     }
 
     // Hash password
@@ -74,12 +91,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        user: { ...userResponse, id: result.insertedId },
+        success: true,
+        message: "User created successfully",
+        user: {
+          ...userResponse,
+          _id: result.insertedId.toString(),
+        },
       },
       { status: 201 },
     )
   } catch (error) {
     console.error("Error creating user:", error)
-    return NextResponse.json({ message: "Internal server error" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Internal server error" }, { status: 500 })
   }
 }

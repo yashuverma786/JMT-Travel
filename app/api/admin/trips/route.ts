@@ -11,15 +11,16 @@ export async function GET(request: NextRequest) {
     const { db } = await connectToDatabase()
     const trips = await db.collection("trips").find({}).sort({ createdAt: -1 }).toArray()
 
-    return NextResponse.json(
-      trips.map((trip) => ({
+    return NextResponse.json({
+      success: true,
+      trips: trips.map((trip) => ({
         ...trip,
         _id: trip._id.toString(),
       })),
-    )
+    })
   } catch (error) {
     console.error("Error fetching trips:", error)
-    return NextResponse.json({ message: "Error fetching trips" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Error fetching trips" }, { status: 500 })
   }
 }
 
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     const { db } = await connectToDatabase()
 
     if (!tripData.title || !tripData.destinationId || !tripData.adultPrice) {
-      return NextResponse.json({ message: "Missing required fields" }, { status: 400 })
+      return NextResponse.json({ success: false, message: "Missing required fields" }, { status: 400 })
     }
 
     // Get destination name
@@ -70,13 +71,17 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        ...createdTrip,
-        _id: createdTrip._id.toString(),
+        success: true,
+        message: "Trip created successfully",
+        trip: {
+          ...createdTrip,
+          _id: createdTrip._id.toString(),
+        },
       },
       { status: 201 },
     )
   } catch (error) {
     console.error("Error creating trip:", error)
-    return NextResponse.json({ message: "Error creating trip" }, { status: 500 })
+    return NextResponse.json({ success: false, message: "Error creating trip" }, { status: 500 })
   }
 }
