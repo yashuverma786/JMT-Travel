@@ -16,6 +16,11 @@ export async function GET(request: NextRequest) {
       trips: trips.map((trip) => ({
         ...trip,
         _id: trip._id.toString(),
+        imageUrl: trip.featuredImage || trip.imageUrls?.[0] || trip.images?.[0] || null,
+        displayPrice: trip.salePrice || trip.adultPrice || trip.normalPrice || 0,
+        originalPrice: trip.adultPrice || trip.normalPrice || 0,
+        hasDiscount: (trip.salePrice || 0) > 0 && (trip.salePrice || 0) < (trip.adultPrice || trip.normalPrice || 0),
+        slug: trip.slug || trip._id.toString(),
       })),
     })
   } catch (error) {
@@ -38,30 +43,55 @@ export async function POST(request: NextRequest) {
 
     // Get destination name
     let destinationName = "Unknown"
+    let destinationCountry = ""
     if (ObjectId.isValid(tripData.destinationId)) {
       const destination = await db.collection("destinations").findOne({ _id: new ObjectId(tripData.destinationId) })
       destinationName = destination?.name || "Unknown"
+      destinationCountry = destination?.country || ""
     }
+
+    // Generate slug from title
+    const slug = tripData.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "")
 
     const newTrip = {
       title: tripData.title,
       description: tripData.description || "",
+      overview: tripData.overview || tripData.description || "",
       destinationId: tripData.destinationId,
       destinationName,
+      destinationCountry,
       tripType: tripData.tripType || "leisure",
+      category: tripData.tripType || "leisure",
       durationDays: Number(tripData.durationDays) || 1,
       durationNights: Number(tripData.durationNights) || 0,
       adultPrice: Number(tripData.adultPrice),
-      salePrice: Number(tripData.salePrice || tripData.adultPrice),
+      normalPrice: Number(tripData.adultPrice),
+      salePrice: Number(tripData.salePrice || 0),
       childPrice: Number(tripData.childPrice || 0),
       infantPrice: Number(tripData.infantPrice || 0),
       images: tripData.images || [],
+      imageUrls: tripData.images || [],
+      featuredImage: tripData.images?.[0] || null,
+      galleryImages: tripData.images || [],
       inclusions: tripData.inclusions || [],
       exclusions: tripData.exclusions || [],
+      highlights: tripData.highlights || [],
       itinerary: tripData.itinerary || [],
       status: tripData.status || "active",
       isTrending: Boolean(tripData.isTrending),
       isPopular: Boolean(tripData.isPopular),
+      rating: Number(tripData.rating || 4.5),
+      reviewCount: Number(tripData.reviewCount || 0),
+      maxGroupSize: Number(tripData.maxGroupSize || 15),
+      minAge: Number(tripData.minAge || 0),
+      difficulty: tripData.difficulty || "easy",
+      bestTimeToVisit: tripData.bestTimeToVisit || "",
+      departureCity: tripData.departureCity || "",
+      returnCity: tripData.returnCity || "",
+      slug: slug,
       createdAt: new Date(),
       updatedAt: new Date(),
     }
@@ -76,6 +106,12 @@ export async function POST(request: NextRequest) {
         trip: {
           ...createdTrip,
           _id: createdTrip._id.toString(),
+          imageUrl: createdTrip.featuredImage || createdTrip.imageUrls?.[0] || createdTrip.images?.[0] || null,
+          displayPrice: createdTrip.salePrice || createdTrip.adultPrice || createdTrip.normalPrice || 0,
+          originalPrice: createdTrip.adultPrice || createdTrip.normalPrice || 0,
+          hasDiscount:
+            (createdTrip.salePrice || 0) > 0 &&
+            (createdTrip.salePrice || 0) < (createdTrip.adultPrice || createdTrip.normalPrice || 0),
         },
       },
       { status: 201 },

@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     const file = formData.get("file") as File
 
     if (!file) {
-      return NextResponse.json({ error: "No file provided" }, { status: 400 })
+      return NextResponse.json({ success: false, error: "No file provided" }, { status: 400 })
     }
 
     // Convert file to buffer
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
           {
             resource_type: "auto",
             folder: "jmt-travel",
-            transformation: [{ width: 1200, height: 800, crop: "limit" }, { quality: "auto" }, { format: "webp" }],
+            transformation: [{ width: 800, height: 600, crop: "fill", quality: "auto" }],
           },
           (error, result) => {
             if (error) reject(error)
@@ -38,10 +38,12 @@ export async function POST(request: NextRequest) {
         .end(buffer)
     })
 
+    const uploadResult = result as any
+
     return NextResponse.json({
       success: true,
-      url: (result as any).secure_url,
-      public_id: (result as any).public_id,
+      url: uploadResult.secure_url,
+      public_id: uploadResult.public_id,
     })
   } catch (error) {
     console.error("Upload error:", error)

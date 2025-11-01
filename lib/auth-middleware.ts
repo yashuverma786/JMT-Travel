@@ -20,7 +20,7 @@ export async function checkPermissions(request: NextRequest, requiredPermissions
     let token = authHeader?.replace("Bearer ", "")
 
     if (!token) {
-      token = request.cookies.get("admin-token")?.value
+      token = request.cookies.get("admin_token")?.value
     }
 
     if (!token) {
@@ -69,7 +69,7 @@ export async function authenticateAdmin(request: NextRequest): Promise<Authentic
     let token = authHeader?.replace("Bearer ", "")
 
     if (!token) {
-      token = request.cookies.get("admin-token")?.value
+      token = request.cookies.get("admin_token")?.value
     }
 
     if (!token) {
@@ -109,7 +109,7 @@ export async function getAuthenticatedUser(request: NextRequest) {
     let token = authHeader?.replace("Bearer ", "")
 
     if (!token) {
-      token = request.cookies.get("admin-token")?.value
+      token = request.cookies.get("admin_token")?.value
     }
 
     if (!token) {
