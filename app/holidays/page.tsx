@@ -316,13 +316,13 @@ export default function HolidaysPage() {
 
                       <div className="flex gap-2">
                         <Button size="sm" className="flex-1" asChild>
-                          <Link href={`/trips/${trip._id}`}>
+                          <Link href={`/holidays/${trip._id}`}>
                             <Camera className="h-3 w-3 mr-1" />
                             View Details
                           </Link>
                         </Button>
                         <Button size="sm" variant="outline" className="flex-1 bg-transparent" asChild>
-                          <Link href={`/trips/${trip._id}`}>
+                          <Link href={`/holidays/${trip._id}`}>
                             <Heart className="h-3 w-3 mr-1" />
                             Save
                           </Link>
