@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Edit, Trash2, X, Upload, RefreshCw } from "lucide-react"
+import { Plus, Edit, Trash2, X, Upload, RefreshCw, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
 interface Trip {
@@ -85,6 +85,7 @@ export default function TripsPage() {
     inclusions: [] as string[],
     exclusions: [] as string[],
     highlights: [] as string[],
+    itinerary: [] as Array<{ day: number; title: string; description: string }>, // added itinerary field
     status: "active",
     isTrending: false,
     isPopular: false,
@@ -101,6 +102,7 @@ export default function TripsPage() {
   const [newInclusion, setNewInclusion] = useState("")
   const [newExclusion, setNewExclusion] = useState("")
   const [newHighlight, setNewHighlight] = useState("")
+  const [newItinerary, setNewItinerary] = useState({ day: 1, title: "", description: "" }) // added itinerary state
 
   useEffect(() => {
     fetchTrips()
@@ -217,6 +219,7 @@ export default function TripsPage() {
       inclusions: trip.inclusions || [],
       exclusions: trip.exclusions || [],
       highlights: trip.highlights || [],
+      itinerary: trip.itinerary || [], // load itinerary from trip
       status: trip.status || "active",
       isTrending: trip.isTrending || false,
       isPopular: trip.isPopular || false,
@@ -364,6 +367,23 @@ export default function TripsPage() {
     }))
   }
 
+  const addItinerary = () => {
+    if (newItinerary.title.trim() && newItinerary.description.trim()) {
+      setFormData((prev) => ({
+        ...prev,
+        itinerary: [...prev.itinerary, { ...newItinerary }],
+      }))
+      setNewItinerary({ day: newItinerary.day + 1, title: "", description: "" })
+    }
+  }
+
+  const removeItinerary = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      itinerary: prev.itinerary.filter((_, i) => i !== index),
+    }))
+  }
+
   const resetForm = () => {
     setFormData({
       title: "",
@@ -381,6 +401,7 @@ export default function TripsPage() {
       inclusions: [],
       exclusions: [],
       highlights: [],
+      itinerary: [], // reset itinerary
       status: "active",
       isTrending: false,
       isPopular: false,
@@ -398,6 +419,7 @@ export default function TripsPage() {
     setNewInclusion("")
     setNewExclusion("")
     setNewHighlight("")
+    setNewItinerary({ day: 1, title: "", description: "" }) // reset itinerary input
   }
 
   if (loading && trips.length === 0) {
@@ -742,6 +764,64 @@ export default function TripsPage() {
                 </div>
               </div>
 
+              {/* Itinerary */}
+              <div>
+                <Label>Itinerary</Label>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+                    <Input
+                      type="number"
+                      min="1"
+                      value={newItinerary.day}
+                      onChange={(e) =>
+                        setNewItinerary((prev) => ({ ...prev, day: Number.parseInt(e.target.value) || 1 }))
+                      }
+                      placeholder="Day"
+                    />
+                    <Input
+                      value={newItinerary.title}
+                      onChange={(e) => setNewItinerary((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="Day title"
+                      className="md:col-span-2"
+                    />
+                    <Input
+                      value={newItinerary.description}
+                      onChange={(e) => setNewItinerary((prev) => ({ ...prev, description: e.target.value }))}
+                      placeholder="Day description"
+                      className="md:col-span-2"
+                    />
+                    <Button type="button" onClick={addItinerary} className="bg-blue-600 hover:bg-blue-700">
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                  {formData.itinerary.length > 0 && (
+                    <div className="space-y-2 mt-4">
+                      {formData.itinerary.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between p-3 border rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex-1">
+                            <strong className="text-blue-600">Day {item.day}:</strong>
+                            <span className="font-semibold ml-2">{item.title}</span>
+                            <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => removeItinerary(index)}
+                            className="ml-2 flex-shrink-0"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {/* Additional Details */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
@@ -869,16 +949,25 @@ export default function TripsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {trips.map((trip) => (
-          <Card key={trip._id} className="hover:shadow-lg transition-shadow">
+          <Card key={trip._id} className="hover:shadow-lg transition-all duration-300 group overflow-hidden">
+            <div className="relative h-40 bg-gray-200 overflow-hidden">
+              {trip.images && trip.images.length > 0 ? (
+                <img
+                  src={trip.images[0] || "/placeholder.svg"}
+                  alt={trip.title}
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  onError={(e) => {
+                    ;(e.target as HTMLImageElement).src = "/placeholder.svg?height=160&width=400&text=Trip"
+                  }}
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-300 to-blue-600 flex items-center justify-center">
+                  <Camera className="w-8 h-8 text-white opacity-50" />
+                </div>
+              )}
+            </div>
             <CardContent className="p-4">
               <div className="space-y-3">
-                {trip.images && trip.images.length > 0 && (
-                  <img
-                    src={trip.images[0] || "/placeholder.svg"}
-                    alt={trip.title}
-                    className="w-full h-48 object-cover rounded"
-                  />
-                )}
                 <div>
                   <h3 className="font-semibold text-lg line-clamp-2">{trip.title}</h3>
                   <p className="text-sm text-gray-600">{trip.destinationName}</p>
@@ -906,6 +995,9 @@ export default function TripsPage() {
                   <Badge variant={trip.status === "active" ? "default" : "secondary"}>{trip.status}</Badge>
                   {trip.isTrending && <Badge className="bg-green-500">Trending</Badge>}
                   {trip.isPopular && <Badge className="bg-blue-500">Popular</Badge>}
+                  {trip.itinerary && trip.itinerary.length > 0 && (
+                    <Badge className="bg-purple-500">{trip.itinerary.length} Days</Badge>
+                  )}
                 </div>
                 <div className="flex space-x-2">
                   <Button size="sm" variant="outline" onClick={() => handleEdit(trip)}>

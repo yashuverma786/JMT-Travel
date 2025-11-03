@@ -15,6 +15,7 @@ interface Trip {
   imageUrls?: string[]
   featuredImage?: string
   galleryImages?: string[]
+  images?: string[]
   adultPrice?: number
   salePrice?: number
   durationDays?: number
@@ -25,6 +26,7 @@ interface Trip {
   tripType?: string
   isTrending?: boolean
   featured?: boolean
+  itinerary?: any[]
 }
 
 export default function FeaturedTripsSection() {
@@ -73,14 +75,14 @@ export default function FeaturedTripsSection() {
   return (
     <section className="py-16 bg-gray-50">
       <div className="container px-6">
-        <div className="text-center mb-12">
+        <div className="text-center mb-12 animate-slide-up">
           <h2 className="text-4xl font-bold mb-4 text-gray-800">Featured Trips</h2>
           <p className="text-xl text-gray-600">Discover our most popular travel packages</p>
         </div>
 
         {trips.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {trips.map((trip) => {
+            {trips.map((trip, index) => {
               const adultPrice = typeof trip.adultPrice === "number" ? trip.adultPrice : 0
               const salePrice = typeof trip.salePrice === "number" ? trip.salePrice : adultPrice
               const displayPrice = salePrice > 0 ? salePrice : adultPrice
@@ -89,31 +91,38 @@ export default function FeaturedTripsSection() {
 
               const imageUrl =
                 trip.featuredImage ||
+                trip.images?.[0] ||
                 (trip.imageUrls && trip.imageUrls[0]) ||
                 (trip.galleryImages && trip.galleryImages[0]) ||
                 "/placeholder.svg?height=250&width=400&text=Beautiful+Destination"
 
               return (
-                <Card key={trip._id} className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
+                <Card
+                  key={trip._id}
+                  className="overflow-hidden hover:shadow-xl transition-all duration-300 group animate-fade-in"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
                   <div className="relative">
                     <Image
                       src={imageUrl || "/placeholder.svg"}
                       alt={trip.title}
                       width={400}
                       height={250}
-                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement
                         target.src = "/placeholder.svg?height=250&width=400&text=Beautiful+Destination"
                       }}
                     />
                     {hasDiscount && discountPercent > 0 && (
-                      <Badge className="absolute top-3 right-3 bg-red-500 text-white font-semibold">
+                      <Badge className="absolute top-3 right-3 bg-red-500 text-white font-semibold animate-bounce-in">
                         {discountPercent}% OFF
                       </Badge>
                     )}
                     {trip.isTrending && (
-                      <Badge className="absolute top-3 left-3 bg-green-600 text-white">Trending</Badge>
+                      <Badge className="absolute top-3 left-3 bg-green-600 text-white animate-bounce-in">
+                        Trending
+                      </Badge>
                     )}
                     {trip.featured && (
                       <Badge className="absolute bottom-3 left-3 bg-yellow-600 text-white">Featured</Badge>
@@ -121,7 +130,9 @@ export default function FeaturedTripsSection() {
                   </div>
 
                   <CardContent className="p-6">
-                    <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-2">{trip.title}</h3>
+                    <h3 className="text-xl font-bold mb-2 text-gray-800 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      {trip.title}
+                    </h3>
 
                     <div className="flex items-center text-gray-600 mb-2">
                       <MapPin className="h-4 w-4 mr-2" />
@@ -154,6 +165,14 @@ export default function FeaturedTripsSection() {
                       </div>
                     )}
 
+                    {trip.itinerary && trip.itinerary.length > 0 && (
+                      <div className="mb-2">
+                        <Badge variant="secondary" className="text-xs">
+                          {trip.itinerary.length}-day itinerary
+                        </Badge>
+                      </div>
+                    )}
+
                     {trip.rating && trip.rating > 0 && (
                       <div className="flex items-center mb-3">
                         <Star className="h-4 w-4 text-yellow-500 mr-1" />
@@ -177,7 +196,10 @@ export default function FeaturedTripsSection() {
                           <span className="text-lg font-bold text-blue-600">Price on request</span>
                         )}
                       </div>
-                      <Button asChild className="bg-blue-600 hover:bg-blue-700">
+                      <Button
+                        asChild
+                        className="bg-blue-600 hover:bg-blue-700 transition-all duration-300 hover:shadow-lg hover:scale-105"
+                      >
                         <Link href={`/trips/${trip._id}`}>View Details</Link>
                       </Button>
                     </div>
@@ -200,8 +222,12 @@ export default function FeaturedTripsSection() {
           </div>
         )}
 
-        <div className="text-center mt-12">
-          <Button asChild size="lg" className="bg-orange-500 hover:bg-orange-600">
+        <div className="text-center mt-12 animate-slide-up">
+          <Button
+            asChild
+            size="lg"
+            className="bg-orange-500 hover:bg-orange-600 transition-all duration-300 hover:shadow-lg hover:scale-105"
+          >
             <Link href="/trips">View All Trips</Link>
           </Button>
         </div>

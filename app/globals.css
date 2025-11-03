@@ -19,6 +19,22 @@ body {
     animation: slideUp 0.6s ease-out;
   }
 
+  .animate-slide-down {
+    animation: slideDown 0.6s ease-out;
+  }
+
+  .animate-slide-left {
+    animation: slideLeft 0.6s ease-out;
+  }
+
+  .animate-slide-right {
+    animation: slideRight 0.6s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out;
+  }
+
   .animate-bounce-in {
     animation: bounceIn 0.8s ease-out;
   }
@@ -47,6 +63,31 @@ body {
     padding-left: env(safe-area-inset-left);
     padding-right: env(safe-area-inset-right);
   }
+
+  /* Smooth transition classes */
+  .transition-smooth {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-grow {
+    @apply transition-transform duration-300 hover:scale-105;
+  }
+
+  .hover-lift-sm {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-2 hover:shadow-xl;
+  }
+
+  .group-hover-scale {
+    @apply group-hover:scale-110 transition-transform duration-300;
+  }
+
+  .card-transition {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  }
 }
 
 @keyframes fadeIn {
@@ -68,6 +109,50 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideRight {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
